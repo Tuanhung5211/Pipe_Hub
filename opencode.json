@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "*": "ask",
+    "read": "allow",
+    "edit": {
+      "*": "deny",
+      "Pipe_Hub.UI/**": "allow",
+      "Pipe_Hub.BLL/**": "allow",
+      "Pipe_Hub.DAL/**": "allow",
+      "docs/**": "allow",
+      "database/**": "allow",
+      "*.sln": "allow",
+      "*.md": "allow",
+      ".gitignore": "allow",
+      "opencode.json": "allow"
+    },
+    "bash": {
+      "*": "ask",
+      "dotnet build *": "allow",
+      "dotnet test *": "allow",
+      "dotnet restore *": "allow",
+      "dotnet ef *": "allow",
+      "git status": "allow",
+      "git diff *": "allow",
+      "git log *": "allow",
+      "git add *": "allow",
+      "git commit *": "allow",
+      "dir *": "allow",
+      "type *": "allow",
+      "rm *": "deny",
+      "del *": "deny",
+      "Remove-Item *": "deny",
+      "format *": "deny"
+    },
+    "external_directory": {
+      "C:/Code_Projects/VS/BTL_LTTQ/Pipe_Hub/**": "allow"
+    }
+  }
+}
