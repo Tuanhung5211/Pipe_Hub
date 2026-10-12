@@ -22,7 +22,10 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
             .HasMaxLength(2000);
 
         // Unique composite — mỗi user chỉ review 1 game 1 lần
-        builder.HasIndex(r => new { r.UserId, r.GameId }).IsUnique();
+        // HasFilter loại review đã xóa mềm → user có thể viết lại sau khi xóa
+        builder.HasIndex(r => new { r.UserId, r.GameId })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
         builder.HasIndex(r => r.GameId);
         builder.HasIndex(r => r.CreatedAt);
 

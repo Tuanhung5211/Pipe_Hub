@@ -141,3 +141,49 @@ Program.cs CHỈ gọi 2 method này. KHÔNG có `using Pipe_Hub.DAL` trong Pipe
 - Tuân thủ quy tắc 3 tầng: UI → BLL → DAL một chiều
 - Verify bằng `Select-String -Path Pipe_Hub.UI\*.cs -Pattern "using Pipe_Hub.DAL"` → 0 kết quả
 - Khi bảo vệ, hội đồng có thể hỏi "UI có gọi DbContext không?" → trả lời chắc chắn "Không"
+
+### 2026-10-12 — Bọc DbSeeder trong transaction
+
+**Bối cảnh:** DbSeeder cũ có hơn 10 lần SaveChanges rời nhau. Nếu lỗi giữa chừng (VD: unique constraint sau khi đã insert Role), lần chạy sau thấy Roles.AnyAsync() = true → bỏ qua toàn bộ → DB thiếu data vĩnh viễn.
+
+**Quyết định:** Bọc toàn bộ seed trong `BeginTransactionAsync` + `CommitAsync` cuối + `RollbackAsync` trong catch. Đổi idempotent check từ Roles.AnyAsync() sang Orders.AnyAsync() (bảng cuối cùng được seed).
+
+**Lý do:** Transaction đảm bảo all-or-nothing. Idempotent check dựa trên bảng cuối giúp phát hiện đúng trạng thái seed hoàn chỉnh.
+
+### 2026-10-12 — Seed bổ sung Order/Transaction/GameBuild/TopUpRequest/Achievement
+
+**Bối cảnh:** DbSeeder cũ chỉ seed User/Game/Wallet/Review — thiếu Order, Transaction, GameBuild. Dashboard và Report sẽ trống hoàn toàn khi demo.
+
+**Quyết định:** Bổ sung seed data:
+- 2 Order (player1 mua Sky Adventure, player2 mua Dungeon Master)
+- 2 OrderItem tương ứng
+- 5 Transaction (3 TopUp ban đầu + 2 Purchase)
+- 6 GameBuild (Stable + Beta)
+- 3 TopUpRequest (2 Pending + 1 Approved)
+- 3 Achievement + 3 UserAchievement
+
+**Lý do:** Đủ data để biểu đồ doanh thu/CCU có ý nghĩa. Wallet Balance đồng bộ với tổng Transaction (player1 = 301k sau khi mua, player2 = 101k, player3 = 1M chưa mua).
+
+### 2026-10-12 — MessageBox khi lỗi khởi động
+
+**Bối cảnh:** Program.cs cũ chỉ ghi log trong catch, không hiện MessageBox. Máy bảo vệ không có LocalDB → app tắt im lặng.
+
+**Quyết định:** Catch block hiện MessageBox với 2 case:
+- SqlException → gợi ý kiểm tra LocalDB + connection string
+- Exception khác → thông báo chung + chỉ đến file log
+
+Dùng fully-qualified `Microsoft.Data.SqlClient.SqlException` (không thêm using — UI.csproj không cài SqlClient trực tiếp).
+
+**Lý do:** Người dùng cuối không đọc log file → cần thông báo trực quan. Đặc biệt quan trọng khi demo trên máy khác.
+
+### 2026-10-12 — Không dùng HasQueryFilter cho Game.IsDeleted
+
+**Bối cảnh:** Game có property IsDeleted. Reviewer đề xuất thêm HasQueryFilter như Review/Comment.
+
+**Quyết định:** KHÔNG dùng query filter cho Game. Lọc thủ công trong Service khi query cho Player.
+
+**Lý do:**
+- Publisher cần xem game đã xóa để restore hoặc audit
+- Admin cần xem game đã xóa để quản lý
+- Query filter áp dụng MỌI query → sẽ ẩn game với cả Admin/Publisher
+- Player query sẽ tự thêm `Where(g => !g.IsDeleted)` trong GameService

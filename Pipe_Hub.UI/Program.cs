@@ -74,6 +74,29 @@ internal static class Program
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application start-up failed");
+
+            if (ex is Microsoft.Data.SqlClient.SqlException)
+            {
+                MessageBox.Show(
+                    "Không thể kết nối cơ sở dữ liệu.\n\n" +
+                    "Vui lòng kiểm tra:\n" +
+                    "- SQL Server LocalDB đã được cài đặt chưa?\n" +
+                    "- Connection string trong appsettings.json đúng chưa?\n\n" +
+                    $"Chi tiết: {ex.Message}",
+                    "Lỗi kết nối cơ sở dữ liệu",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            else
+            {
+                MessageBox.Show(
+                    "Ứng dụng không thể khởi động.\n\n" +
+                    $"Chi tiết: {ex.Message}\n\n" +
+                    "Vui lòng kiểm tra file log để biết thêm.",
+                    "Lỗi khởi động",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
         finally
         {
