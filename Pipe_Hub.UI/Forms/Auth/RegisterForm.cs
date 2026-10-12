@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
+using Pipe_Hub.UI.Helpers;
 
 namespace Pipe_Hub.UI.Forms.Auth;
 
@@ -25,6 +27,10 @@ public class RegisterForm : Form
 
     private void InitializeComponents()
     {
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoValidate = AutoValidate.EnableAllowFocusChange;
+
         Text = "Pipe Hub — Đăng ký tài khoản";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -50,22 +56,32 @@ public class RegisterForm : Form
 
         var lblUsername = new Label { Text = "Tên đăng nhập:", Location = new Point(labelX, y), Size = new Size(120, 25) };
         _txtUsername = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25) };
+        _txtUsername.Validating += TxtUsername_Validating;
         y += rowH;
 
         var lblEmail = new Label { Text = "Email:", Location = new Point(labelX, y), Size = new Size(120, 25) };
         _txtEmail = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25) };
+        _txtEmail.Validating += TxtEmail_Validating;
         y += rowH;
 
         var lblPassword = new Label { Text = "Mật khẩu:", Location = new Point(labelX, y), Size = new Size(120, 25) };
         _txtPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtPassword.Validating += TxtPassword_Validating;
+        _txtPassword.TextChanged += (s, e) =>
+        {
+            if (_txtConfirmPassword.Text.Length > 0)
+                TxtConfirmPassword_Validating(_txtConfirmPassword, new CancelEventArgs());
+        };
         y += rowH;
 
         var lblConfirm = new Label { Text = "Xác nhận mật khẩu:", Location = new Point(labelX, y), Size = new Size(120, 25) };
         _txtConfirmPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtConfirmPassword.Validating += TxtConfirmPassword_Validating;
         y += rowH;
 
         var lblFullName = new Label { Text = "Họ tên:", Location = new Point(labelX, y), Size = new Size(120, 25) };
         _txtFullName = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25) };
+        _txtFullName.Validating += TxtFullName_Validating;
         y += rowH;
 
         var lblCountry = new Label { Text = "Quốc gia:", Location = new Point(labelX, y), Size = new Size(120, 25) };
@@ -103,9 +119,45 @@ public class RegisterForm : Form
         });
     }
 
+    private void TxtUsername_Validating(object? sender, CancelEventArgs e)
+    {
+        var username = _txtUsername.Text.Trim();
+        e.Cancel = !_errorProvider.Check(_txtUsername,
+            !string.IsNullOrWhiteSpace(username) && username.Length >= 3 && username.Length <= 50,
+            "Tên đăng nhập phải từ 3 đến 50 ký tự.");
+    }
+
+    private void TxtEmail_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtEmail,
+            ErrorProviderHelper.IsValidEmail(_txtEmail.Text),
+            "Email không hợp lệ.");
+    }
+
+    private void TxtPassword_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtPassword,
+            !string.IsNullOrWhiteSpace(_txtPassword.Text) && _txtPassword.Text.Length >= 6,
+            "Mật khẩu phải từ 6 ký tự trở lên.");
+    }
+
+    private void TxtConfirmPassword_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtConfirmPassword,
+            _txtConfirmPassword.Text == _txtPassword.Text,
+            "Mật khẩu xác nhận không khớp.");
+    }
+
+    private void TxtFullName_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtFullName,
+            !string.IsNullOrWhiteSpace(_txtFullName.Text.Trim()),
+            "Vui lòng nhập họ tên.");
+    }
+
     private async void BtnRegister_Click(object? sender, EventArgs e)
     {
-        _errorProvider.Clear();
+        if (!ValidateChildren()) return;
 
         var username = _txtUsername.Text.Trim();
         var email = _txtEmail.Text.Trim();
@@ -114,103 +166,49 @@ public class RegisterForm : Form
         var fullName = _txtFullName.Text.Trim();
         var country = _txtCountry.Text.Trim();
 
-        // Validate
-        if (string.IsNullOrWhiteSpace(username))
+        await this.RunSafeAsync(async () =>
         {
-            _errorProvider.SetError(_txtUsername, "Vui lòng nhập tên đăng nhập.");
-            return;
-        }
-
-        if (username.Length < 3 || username.Length > 50)
-        {
-            _errorProvider.SetError(_txtUsername, "Tên đăng nhập phải từ 3 đến 50 ký tự.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            _errorProvider.SetError(_txtEmail, "Vui lòng nhập email.");
-            return;
-        }
-
-        if (!email.Contains('@') || !email.Contains('.'))
-        {
-            _errorProvider.SetError(_txtEmail, "Email không hợp lệ.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            _errorProvider.SetError(_txtPassword, "Vui lòng nhập mật khẩu.");
-            return;
-        }
-
-        if (password.Length < 6)
-        {
-            _errorProvider.SetError(_txtPassword, "Mật khẩu phải từ 6 ký tự trở lên.");
-            return;
-        }
-
-        if (password != confirmPassword)
-        {
-            _errorProvider.SetError(_txtConfirmPassword, "Mật khẩu xác nhận không khớp.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(fullName))
-        {
-            _errorProvider.SetError(_txtFullName, "Vui lòng nhập họ tên.");
-            return;
-        }
-
-        try
-        {
-            _btnRegister.Enabled = false;
-            _btnRegister.Text = "Đang xử lý...";
-
-            var request = new RegisterRequestDto
+            try
             {
-                Username = username,
-                Email = email,
-                Password = password,
-                ConfirmPassword = confirmPassword,
-                FullName = fullName,
-                Country = string.IsNullOrWhiteSpace(country) ? null : country
-            };
+                _btnRegister.Enabled = false;
+                _btnRegister.Text = "Đang xử lý...";
 
-            var result = await _authService.RegisterAsync(request);
+                var request = new RegisterRequestDto
+                {
+                    Username = username,
+                    Email = email,
+                    Password = password,
+                    ConfirmPassword = confirmPassword,
+                    FullName = fullName,
+                    Country = string.IsNullOrWhiteSpace(country) ? null : country
+                };
 
-            if (!result.IsSuccess)
-            {
+                var result = await _authService.RegisterAsync(request);
+
+                if (!result.IsSuccess)
+                {
+                    MessageBox.Show(
+                        result.ErrorMessage ?? "Đăng ký thất bại.",
+                        "Đăng ký",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
                 MessageBox.Show(
-                    result.ErrorMessage ?? "Đăng ký thất bại.",
-                    "Đăng ký",
+                    "Đăng ký thành công! Bạn có thể đăng nhập ngay.",
+                    "Thành công",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
+                    MessageBoxIcon.Information);
+                DialogResult = DialogResult.OK;
+                Close();
             }
-
-            MessageBox.Show(
-                "Đăng ký thành công! Bạn có thể đăng nhập ngay.",
-                "Thành công",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"Đã xảy ra lỗi khi đăng ký: {ex.Message}",
-                "Lỗi",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-        }
-        finally
-        {
-            _btnRegister.Enabled = true;
-            _btnRegister.Text = "Đăng ký";
-        }
+            finally
+            {
+                _btnRegister.Enabled = true;
+                _btnRegister.Text = "Đăng ký";
+            }
+        });
     }
 
     protected override void Dispose(bool disposing)

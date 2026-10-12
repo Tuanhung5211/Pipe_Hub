@@ -211,3 +211,43 @@ Dùng fully-qualified `Microsoft.Data.SqlClient.SqlException` (không thêm usin
 **Quyết định:** Dùng lại `Roles.AnyAsync()` (bảng đầu tiên được seed).
 
 **Lý do:** Với transaction, check bảng đầu là đủ và rẻ nhất. Tránh phụ thuộc vào thứ tự seed các bảng sau.
+
+---
+
+## D3 — Auth, MainForm, validate và DPI
+
+### 2026-10-12 — Vòng đời service/context trong DI
+
+**Quyết định:** `CurrentUserContext` + `ISystemConfigService` = Singleton (giữ trạng thái user/cache config); `IAuthService` + `ILogService` = Transient (không state); DbContext tạo ngắn hạn qua `IDbContextFactory`, dùng `await using` rồi bỏ.
+
+**Lý do:** Singleton cho state/cache để dùng chung xuyên form; Transient cho service không state để thread-safe; không giữ 1 DbContext suốt app (WinForms pattern) tránh tracking rác và lỗi concurrency.
+
+### 2026-10-12 — Ghi log nghiệp vụ fire-and-forget
+
+**Quyết định:** AuthService gọi `_ = _logService.WriteAsync(...)` không await.
+
+**Lý do:** `WriteAsync` nuốt mọi exception bên trong nên fire-and-forget an toàn — login/register không bị block bởi ghi log, app không crash nếu bảng LogEntries lỗi.
+
+### 2026-10-12 — Luồng đăng xuất quay lại LoginForm
+
+**Quyết định:** `MainForm.LogoutRequested` phân biệt Đăng xuất (LoginForm hiện lại, clear ô nhập) và Thoát/nút X (đóng app). LoginForm bỏ `FormClosed += Close` cũ và bỏ `CancelButton` trỏ vào nút Đăng ký (Esc không mở Register nữa).
+
+**Lý do:** Đúng yêu cầu đề (đăng nhập/đăng xuất); tránh thoát app nhầm khi user chỉ muốn đăng xuất hoặc bấm Esc.
+
+### 2026-10-12 — UI chỉ dùng DTO, không lộ entity DAL
+
+**Quyết định:** `ILogService` trả `List<LogEntryDto>` (map từ entity + `Include(User)` lấy Username); UI không có `using Pipe_Hub.DAL` (verify bằng Select-String = 0 kết quả).
+
+**Lý do:** Giữ đúng tầng UI → BLL → DAL; `UserDto`/`LogEntryDto` không chứa PasswordHash; khi bảo vệ trả lời được "UI có gọi DbContext không — Không".
+
+### 2026-10-12 — Validate 2 lớp (UI + BLL)
+
+**Quyết định:** UI dùng Validating/ErrorProvider + `AutoValidate.EnableAllowFocusChange` cho trải nghiệm gõ-phản hồi ngay; BLL (AuthService) validate lại toàn bộ cho bảo mật. Helper dùng chung: `UiExtensions.RunSafeAsync` (AppException → MessageBox, lỗi lạ → log + message chung, không lộ ex.Message) và `ErrorProviderHelper` (email qua `MailAddress.TryCreate`).
+
+**Lý do:** Validate UI có thể bị bypass; BLL là chốt chặn cuối. Message lỗi không lường trước không được lộ stack trace/chi tiết kỹ thuật.
+
+### 2026-10-12 — BCrypt chạy ngoài luồng UI
+
+**Quyết định:** Mọi gọi `PasswordHasher.Hash/Verify` trong AuthService bọc `await Task.Run(...)`; PasswordHasher.cs giữ nguyên (static, không biết gì về UI thread).
+
+**Lý do:** BCrypt tốn ~100–300ms — chạy trực tiếp sau await sẽ giật UI khi đăng nhập/đăng ký. Task.Run đẩy CPU-bound work ra thread pool.

@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.BLL.Security;
+using Pipe_Hub.UI.Helpers;
 
 namespace Pipe_Hub.UI.Forms.Auth;
 
@@ -25,6 +27,10 @@ public class ChangePasswordForm : Form
 
     private void InitializeComponents()
     {
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoValidate = AutoValidate.EnableAllowFocusChange;
+
         Text = "Pipe Hub — Đổi mật khẩu";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -50,14 +56,22 @@ public class ChangePasswordForm : Form
 
         var lblOld = new Label { Text = "Mật khẩu cũ:", Location = new Point(labelX, y), Size = new Size(130, 25) };
         _txtOldPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtOldPassword.Validating += TxtOldPassword_Validating;
         y += 32;
 
         var lblNew = new Label { Text = "Mật khẩu mới:", Location = new Point(labelX, y), Size = new Size(130, 25) };
         _txtNewPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtNewPassword.Validating += TxtNewPassword_Validating;
+        _txtNewPassword.TextChanged += (s, e) =>
+        {
+            if (_txtConfirmNewPassword.Text.Length > 0)
+                TxtConfirmNewPassword_Validating(_txtConfirmNewPassword, new CancelEventArgs());
+        };
         y += 32;
 
         var lblConfirm = new Label { Text = "Xác nhận mật khẩu mới:", Location = new Point(labelX, y), Size = new Size(140, 25) };
         _txtConfirmNewPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtConfirmNewPassword.Validating += TxtConfirmNewPassword_Validating;
         y += 42;
 
         _btnChange = new Button
@@ -92,43 +106,37 @@ public class ChangePasswordForm : Form
         });
     }
 
+    private void TxtOldPassword_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtOldPassword,
+            !string.IsNullOrWhiteSpace(_txtOldPassword.Text),
+            "Vui lòng nhập mật khẩu cũ.");
+    }
+
+    private void TxtNewPassword_Validating(object? sender, CancelEventArgs e)
+    {
+        var newPassword = _txtNewPassword.Text;
+        e.Cancel = !_errorProvider.Check(_txtNewPassword,
+            !string.IsNullOrWhiteSpace(newPassword) && newPassword.Length >= 6 && newPassword != _txtOldPassword.Text,
+            newPassword == _txtOldPassword.Text
+                ? "Mật khẩu mới phải khác mật khẩu cũ."
+                : "Mật khẩu mới phải từ 6 ký tự trở lên.");
+    }
+
+    private void TxtConfirmNewPassword_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtConfirmNewPassword,
+            _txtConfirmNewPassword.Text == _txtNewPassword.Text,
+            "Mật khẩu xác nhận không khớp.");
+    }
+
     private async void BtnChange_Click(object? sender, EventArgs e)
     {
-        _errorProvider.Clear();
+        if (!ValidateChildren()) return;
 
         var oldPassword = _txtOldPassword.Text;
         var newPassword = _txtNewPassword.Text;
         var confirmNew = _txtConfirmNewPassword.Text;
-
-        if (string.IsNullOrWhiteSpace(oldPassword))
-        {
-            _errorProvider.SetError(_txtOldPassword, "Vui lòng nhập mật khẩu cũ.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(newPassword))
-        {
-            _errorProvider.SetError(_txtNewPassword, "Vui lòng nhập mật khẩu mới.");
-            return;
-        }
-
-        if (newPassword.Length < 6)
-        {
-            _errorProvider.SetError(_txtNewPassword, "Mật khẩu mới phải từ 6 ký tự trở lên.");
-            return;
-        }
-
-        if (newPassword != confirmNew)
-        {
-            _errorProvider.SetError(_txtConfirmNewPassword, "Mật khẩu xác nhận không khớp.");
-            return;
-        }
-
-        if (newPassword == oldPassword)
-        {
-            _errorProvider.SetError(_txtNewPassword, "Mật khẩu mới phải khác mật khẩu cũ.");
-            return;
-        }
 
         if (!_currentUser.UserId.HasValue)
         {
@@ -140,51 +148,46 @@ public class ChangePasswordForm : Form
             return;
         }
 
-        try
+        await this.RunSafeAsync(async () =>
         {
-            _btnChange.Enabled = false;
-            _btnChange.Text = "Đang xử lý...";
-
-            var request = new ChangePasswordRequestDto
+            try
             {
-                OldPassword = oldPassword,
-                NewPassword = newPassword,
-                ConfirmNewPassword = confirmNew
-            };
+                _btnChange.Enabled = false;
+                _btnChange.Text = "Đang xử lý...";
 
-            var result = await _authService.ChangePasswordAsync(request);
+                var request = new ChangePasswordRequestDto
+                {
+                    OldPassword = oldPassword,
+                    NewPassword = newPassword,
+                    ConfirmNewPassword = confirmNew
+                };
 
-            if (!result.IsSuccess)
-            {
+                var result = await _authService.ChangePasswordAsync(request);
+
+                if (!result.IsSuccess)
+                {
+                    MessageBox.Show(
+                        result.ErrorMessage ?? "Đổi mật khẩu thất bại.",
+                        "Đổi mật khẩu",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
                 MessageBox.Show(
-                    result.ErrorMessage ?? "Đổi mật khẩu thất bại.",
-                    "Đổi mật khẩu",
+                    "Đổi mật khẩu thành công!",
+                    "Thành công",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
+                    MessageBoxIcon.Information);
+                DialogResult = DialogResult.OK;
+                Close();
             }
-
-            MessageBox.Show(
-                "Đổi mật khẩu thành công!",
-                "Thành công",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"Đã xảy ra lỗi khi đổi mật khẩu: {ex.Message}",
-                "Lỗi",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-        }
-        finally
-        {
-            _btnChange.Enabled = true;
-            _btnChange.Text = "Đổi mật khẩu";
-        }
+            finally
+            {
+                _btnChange.Enabled = true;
+                _btnChange.Text = "Đổi mật khẩu";
+            }
+        });
     }
 
     protected override void Dispose(bool disposing)

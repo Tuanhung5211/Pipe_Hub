@@ -27,6 +27,9 @@ public class MainForm : Form
 
     private void InitializeComponents()
     {
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
+
         Text = "Pipe Hub — Hệ thống quản lý phát hành game";
         WindowState = FormWindowState.Maximized;
         IsMdiContainer = true;

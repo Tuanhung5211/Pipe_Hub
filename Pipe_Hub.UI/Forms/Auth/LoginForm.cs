@@ -1,8 +1,10 @@
+using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.BLL.Security;
 using Pipe_Hub.UI.Forms.Main;
+using Pipe_Hub.UI.Helpers;
 
 namespace Pipe_Hub.UI.Forms.Auth;
 
@@ -33,6 +35,10 @@ public class LoginForm : Form
 
     private void InitializeComponents()
     {
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoValidate = AutoValidate.EnableAllowFocusChange;
+
         Text = "Pipe Hub — Đăng nhập";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -65,6 +71,7 @@ public class LoginForm : Form
             Location = new Point(170, 90),
             Size = new Size(180, 25)
         };
+        _txtUsername.Validating += TxtUsername_Validating;
 
         var lblPassword = new Label
         {
@@ -79,6 +86,7 @@ public class LoginForm : Form
             Size = new Size(180, 25),
             UseSystemPasswordChar = true
         };
+        _txtPassword.Validating += TxtPassword_Validating;
 
         _btnLogin = new Button
         {
@@ -108,77 +116,72 @@ public class LoginForm : Form
         });
     }
 
+    private void TxtUsername_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtUsername,
+            !string.IsNullOrWhiteSpace(_txtUsername.Text.Trim()),
+            "Vui lòng nhập tên đăng nhập.");
+    }
+
+    private void TxtPassword_Validating(object? sender, CancelEventArgs e)
+    {
+        e.Cancel = !_errorProvider.Check(_txtPassword,
+            !string.IsNullOrWhiteSpace(_txtPassword.Text),
+            "Vui lòng nhập mật khẩu.");
+    }
+
     private async void BtnLogin_Click(object? sender, EventArgs e)
     {
-        _errorProvider.Clear();
+        if (!ValidateChildren()) return;
 
         var username = _txtUsername.Text.Trim();
         var password = _txtPassword.Text;
 
-        if (string.IsNullOrWhiteSpace(username))
+        await this.RunSafeAsync(async () =>
         {
-            _errorProvider.SetError(_txtUsername, "Vui lòng nhập tên đăng nhập.");
-            _txtUsername.Focus();
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            _errorProvider.SetError(_txtPassword, "Vui lòng nhập mật khẩu.");
-            _txtPassword.Focus();
-            return;
-        }
-
-        try
-        {
-            _btnLogin.Enabled = false;
-            _btnLogin.Text = "Đang đăng nhập...";
-
-            var request = new LoginRequestDto
+            try
             {
-                Username = username,
-                Password = password
-            };
+                _btnLogin.Enabled = false;
+                _btnLogin.Text = "Đang đăng nhập...";
 
-            var result = await _authService.LoginAsync(request);
+                var request = new LoginRequestDto
+                {
+                    Username = username,
+                    Password = password
+                };
 
-            if (!result.IsSuccess)
-            {
-                MessageBox.Show(
-                    result.ErrorMessage ?? "Đăng nhập thất bại.",
-                    "Đăng nhập",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                _txtPassword.Clear();
-                _txtPassword.Focus();
-                return;
+                var result = await _authService.LoginAsync(request);
+
+                if (!result.IsSuccess)
+                {
+                    MessageBox.Show(
+                        result.ErrorMessage ?? "Đăng nhập thất bại.",
+                        "Đăng nhập",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    _txtPassword.Clear();
+                    _txtPassword.Focus();
+                    return;
+                }
+
+                var user = result.Data!;
+                _currentUser.SetUser(user.Id, user.Username, user.FullName, user.RoleName);
+
+                var mainForm = _serviceProvider.GetRequiredService<MainForm>();
+                Hide();
+                mainForm.ShowDialog();
+                var logout = mainForm.LogoutRequested;
+                mainForm.Dispose();
+                _currentUser.Clear();
+                if (logout) { _txtPassword.Clear(); _txtUsername.Clear(); Show(); _txtUsername.Focus(); }
+                else { Close(); }
             }
-
-            var user = result.Data!;
-            _currentUser.SetUser(user.Id, user.Username, user.FullName, user.RoleName);
-
-            var mainForm = _serviceProvider.GetRequiredService<MainForm>();
-            Hide();
-            mainForm.ShowDialog();
-            var logout = mainForm.LogoutRequested;
-            mainForm.Dispose();
-            _currentUser.Clear();
-            if (logout) { _txtPassword.Clear(); _txtUsername.Clear(); Show(); _txtUsername.Focus(); }
-            else { Close(); }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"Đã xảy ra lỗi khi đăng nhập: {ex.Message}",
-                "Lỗi",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-        }
-        finally
-        {
-            _btnLogin.Enabled = true;
-            _btnLogin.Text = "Đăng nhập";
-        }
+            finally
+            {
+                _btnLogin.Enabled = true;
+                _btnLogin.Text = "Đăng nhập";
+            }
+        });
     }
 
     private void BtnRegister_Click(object? sender, EventArgs e)
