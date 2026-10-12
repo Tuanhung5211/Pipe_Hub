@@ -113,3 +113,31 @@
 - `CheckConstraint("CK_Review_Rating", "[Rating] >= 1 AND [Rating] <= 5")`
 
 **Lý do:** Review/Comment xóa mềm — không xuất hiện trong query mặc định nhưng vẫn giữ trong DB. Rating chỉ nhận 1-5, không cho insert bừa.
+
+### 2026-10-12 — Thêm BCrypt vào DAL cho DbSeeder
+
+**Bối cảnh:** DbSeeder cần hash password Admin mặc định. BLL đã có BCrypt.Net-Next nhưng DAL chưa.
+
+**Quyết định:** Thêm gói BCrypt.Net-Next 4.2.0 vào Pipe_Hub.DAL.
+
+**Lý do:**
+- BCrypt là utility library, không phải business logic — thêm vào DAL KHÔNG vi phạm kiến trúc 3 tầng
+- Tránh hard-code hash password trong Seeder (rủi ro sai → login không được)
+- DbSeeder nằm ở DAL → cần HashPassword() ngay tại tầng đó
+
+**Ngoại lệ:** Quy tắc "NuGet đúng tầng" đã có 1 ngoại lệ ở UI (Microsoft.EntityFrameworkCore.Design). Đây là ngoại lệ thứ 2 — BCrypt trong DAL.
+
+### 2026-10-12 — Chuyển MigrateAndSeed vào BLL, UI không chạm DAL
+
+**Bối cảnh:** Program.cs (UI) cần gọi migrate + seed khi khởi động. Nếu UI gọi trực tiếp `IDbContextFactory` hoặc `DbSeeder` → vi phạm kiến trúc "UI không tham chiếu DAL".
+
+**Quyết định:** Tạo 2 method trong `Pipe_Hub.BLL/Extensions/`:
+- `ServiceCollectionExtensions.AddPipeHubServices(services, configuration)` — đăng ký DbContextFactory
+- `DatabaseInitializer.MigrateAndSeed(services)` — gọi migrate + seed
+
+Program.cs CHỈ gọi 2 method này. KHÔNG có `using Pipe_Hub.DAL` trong Pipe_Hub.UI.
+
+**Lý do:**
+- Tuân thủ quy tắc 3 tầng: UI → BLL → DAL một chiều
+- Verify bằng `Select-String -Path Pipe_Hub.UI\*.cs -Pattern "using Pipe_Hub.DAL"` → 0 kết quả
+- Khi bảo vệ, hội đồng có thể hỏi "UI có gọi DbContext không?" → trả lời chắc chắn "Không"
