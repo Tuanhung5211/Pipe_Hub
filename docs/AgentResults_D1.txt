@@ -1,0 +1,65 @@
+[R1] Lieu ke 13 muc trong C:\Code_Projects\VS (toan thu muc: .git, BaiTapChuong2, BTL_LTTQ, BTLT5, Day1_LTTQ, LTTQ_Buoi7, Test, Web_Ngay2, WebBanSach, WebBanSach2, WinFormsApp1, WinFormsApp2, XacThucDuLieu).
+
+[R2] Giai thich session dang o C:\Code_Projects\VS nen liet ke o do; khong tu thay workspace VS Code; xin duong dan Pipe_Hub de chuyen.
+
+[R3] Dong y chi lam trong C:\Code_Projects\VS\BTL_LTTQ\Pipe_Hub, hoi xac nhan chuyen session.
+
+[R4] Da chuyen session ve Pipe_Hub; tu gio chi lam trong do.
+
+[R5] Doc xong file nguon Pipe_Hub (solution 1 project UI; csproj net10.0-windows; Program Run Form1; Form1 trang 800x450; du an trang chua co BLL/DAL/logic).
+
+[R6] Tra loi "Da hieu".
+
+[R7] D1.1: bang 1 project UI (net10.0-windows, chua LangVersion, 3 file .cs) + BLL/DAL chua ton tai. Khong sua file.
+
+[R8] Tra loi "Da hieu. Cho task tiep theo."
+
+[R9] D1.2: tao BLL+DAL (net10.0), them LangVersion 13.0 ca 3 csproj, add slnx (3 project). Class1.cs user xoa tay do shell bi chan. Build pass, 0 warning/error.
+
+[R10] D1.3: reference UI->BLL (..\Pipe_Hub.BLL), BLL->DAL (..\Pipe_Hub.DAL); DAL khong ref. dotnet list xac nhan 3 chieu dung. Build pass, 0 warning/error.
+
+[R11] D1.4: DAL co EF SqlServer 10.0.12 + SqlClient 7.1.1; UI/BLL khong doi. Build pass, 0 warning/error.
+
+[R12] D1.5: BLL du 11 goi (BCrypt 4.2.0, ClosedXML 0.105.1, QuestPDF 2026.9.1, CsvHelper 33.1.0, QRCoder 1.8.0, MailKit 4.18.1, RestSharp 114.0.0, Extensions.* 10.0.12). Build pass, 0 warning/error.
+
+[R13] D1.6: UI du 8 goi (LiveCharts 2.0.5, GMap 2.1.7, Serilog 4.4.0, Sinks.File 7.0.0, Ext.Hosting 10.0.0, Hosting 10.0.12, Config.Json 10.0.12, EF Design 10.0.12 kem PrivateAssets=all tu sinh). Build pass; 10 warning (NU1902/1903 + NU1701 x3, lap 2 lan).
+
+[R14] D1.7: tao .gitignore (22 dong) + them NoWarn NU1902;NU1903 vao UI.csproj; 3 csproj deu net10/Nullable/LangVersion13; Extensions.* dong 10.0.12. Build pass; warning 10 -> 6 (chi NU1701).
+
+[R15] D1.8: tao DAL/Entities/BaseEntity.cs (abstract, Id/CreatedAt=UtcNow/UpdatedAt?). Build pass, 6 warning NU1701, 0 error.
+
+[R16] D1.9: tao 7 enum rieng (GameStatus/OrderStatus/TopUpStatus/KeyStatus/TransactionType/TransactionStatus/BuildChannel, namespace DAL.Enums, gan so tuong minh). Build pass, 6 warning, 0 error.
+
+[R17] D1.10: tao User.cs + Role.cs (khong build theo yeu cau; navigation toi entity chua ton tai la dung thiet ke).
+
+[R18] Fix nho: xoa `using Pipe_Hub.DAL.Enums;` thua trong User.cs (giu System + Collections.Generic). Khong build.
+
+[R19] D1.11: tao 6 entity Game/Genre/Tag/Language/GameBuild/GameKey (khong build).
+
+[R20] D1.12: tao 5 entity Order/OrderItem/Wallet (RowVersion)/Transaction (2 navigation)/TopUpRequest (khong build).
+
+[R21] D1.13: tao 4 entity Review (chi using Collections)/Comment (khong using)/Achievement (chi Collections)/UserAchievement (chi using System) (khong build).
+
+[R22] D1.14: tao 4 entity PlaySession/Wishlist (using System)/SystemConfig + LogEntry (khong using). Bao thuc te 22 file Entities (BaseEntity + 21 entity, co TopUpRequest) khac so 21 trong yeu cau. Khong build.
+
+[R23] D1.15: build lan dau succeeded, 6 warning NU1701, 0 error, 0 CS8019. Khong sua file.
+
+[R24] D1.16: ghi de Program.cs (Serilog + 3 handler + Host DI + Run Form1) + tao appsettings.json + them ItemGroup copy PreserveNewest vao UI.csproj. Build pass, 6 warning, 0 error.
+
+[R25] D1.17: tao docs/DecisionLog.md (5 quyet dinh D1 + note D2) + commit 07bc406 (41 file, khong bin/obj/.vs). Luu y repo git luc do nam o C:\Code_Projects\VS (chung), commit chi stage Pipe_Hub.
+
+[R26] Xac nhan git chi chay trong Pipe_Hub.
+
+[R27] D1.18 P1: tao UI/_Test/TestChartForm.cs + doi Program.cs Run(TestChartForm). Build pass, 6 warning, 0 error. Khong run/commit; cho user F5.
+
+[R28] D1.18 P2 (buoc 1-2): revert Program.cs ve Form1; bao user xoa tay _Test (shell bi cam) roi DUNG.
+
+[R29] Tiep tuc sau xac nhan: _Test da xoa (glob rong + listing UI). Build pass 6 warning 0 error. Khong co commit cleanup (working tree sach: TestChartForm chua tung commit, Program.cs ve dung ban committed). Them muc LiveCharts2 vao DecisionLog + commit c01ae64. Bao repo thuc te van o VS (chua thay .git rieng), remote da la Pipe_Hub.git.
+
+[R30] Xac nhan D2: repo rieng, 21 entity, NU1701 giu, Fluent API chot, lo trinh D2.1->D2.10.
+
+[R31] Ket qua `git rev-parse --show-toplevel`: C:/Code_Projects/VS/BTL_LTTQ/Pipe_Hub (repo rieng da hoat dong).
+
+[R32] Da xuat docs/ConversationLog_D1.md (5 phan: mo dau, bang 19 task, trang thai cuoi D1, chot D2, ghi chu van hanh).
+
+[R33] Hai file txt nay (UserPrompts_D1.txt + AgentResults_D1.txt).

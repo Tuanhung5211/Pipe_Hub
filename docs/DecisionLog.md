@@ -14,7 +14,7 @@
 **Quyết định:** Dùng .NET 10 cho cả 3 project.
 
 **Lý do:**
-- .NET 9 đã hết hỗ trợ từ 5/2026, .NET 10 là LTS
+- .NET 10 là LTS (hỗ trợ dài hạn), trong khi .NET 9 là STS (kết thúc hỗ trợ 11/2026)
 - EF Core 10.0.12 tương thích hoàn toàn, không phải hạ version
 - Đề cho phép ".NET 9 trở lên" nên .NET 10 hợp lệ
 - Bản publish self-contained không cần cài .NET trên máy đích
@@ -40,9 +40,9 @@
 
 ### 2026-10-11 — Kiến trúc 3 tầng
 
-**Quyết định:** UI → BLL → DAL, một chiều. UI không tham chiếu DAL trực tiếp.
+**Quyết định:** UI → BLL → DAL, một chiều. UI không tham chiếu DAL trực tiếp. DbContext do BLL đăng ký qua AddPipeHubServices, UI chỉ gọi một dòng.
 
-**Ngoại lệ duy nhất:** Program.cs trong UI đăng ký DbContext vào DI.
+**Ngoại lệ duy nhất:** Gói Microsoft.EntityFrameworkCore.Design trong UI với PrivateAssets="all" (chỉ dùng cho công cụ `dotnet ef`, không đi theo output/publish).
 
 **Lý do:** Đúng yêu cầu PDF mục II.4: "Không chấp nhận toàn bộ logic viết trực tiếp trong code-behind của Form".
 
@@ -77,3 +77,39 @@
 - Cần unique index cho: User.Username, User.Email, Role.Name, GameKey.Key, Wallet.UserId (1-1), SystemConfig.Key
 - Cần unique composite index cho: Review (UserId, GameId), UserAchievement (UserId, AchievementId)
 - Cần check constraint Rating 1-5
+
+---
+
+## D2 — Fluent API và Migration Init
+
+### 2026-10-12 — Tách Fluent API ra thư mục Configurations/
+
+**Quyết định:** Mỗi entity 1 file `XxxConfiguration.cs` trong `Pipe_Hub.DAL/Configurations/`. DbContext gọi `modelBuilder.ApplyConfigurationsFromAssembly(typeof(PipeHubDbContext).Assembly)`.
+
+**Lý do:** Config tách rời giúp đọc/diff dễ hơn; tránh DbContext phình to 500+ dòng. 21 file config cho 21 entity.
+
+### 2026-10-12 — Bảng nối N-N đặt tên cụ thể
+
+**Quyết định:** Game-Genre → `GameGenres`; Game-Tag → `GameTags`; Game-Language → `GameLanguages`.
+
+**Lý do:** Mặc định EF Core tự sinh tên như `GameGenre` — nhưng đặt rõ ràng để dễ đọc ERD và báo cáo.
+
+### 2026-10-12 — GameKey → Order dùng DeleteBehavior.SetNull
+
+**Quyết định:** `GameKey.OrderId` là nullable → khi xóa Order, GameKey vẫn giữ, chỉ set OrderId = null.
+
+**Lý do:** Key đã bán không nên bị xóa khi đơn hàng bị hủy/xóa — giữ audit trail.
+
+### 2026-10-12 — Wallet.RowVersion dùng IsRowVersion()
+
+**Quyết định:** `builder.Property(w => w.RowVersion).IsRowVersion().IsConcurrencyToken();`
+
+**Lý do:** PurchaseAsync (D4) cần chống double-spend. SQL Server dùng rowversion column để detect concurrent update. Không có config này, EF Core coi RowVersion là byte[] thường.
+
+### 2026-10-12 — Soft delete Review/Comment + Check Constraint Rating
+
+**Quyết định:**
+- `HasQueryFilter(r => !r.IsDeleted)` cho Review + Comment
+- `CheckConstraint("CK_Review_Rating", "[Rating] >= 1 AND [Rating] <= 5")`
+
+**Lý do:** Review/Comment xóa mềm — không xuất hiện trong query mặc định nhưng vẫn giữ trong DB. Rating chỉ nhận 1-5, không cho insert bừa.

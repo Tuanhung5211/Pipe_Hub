@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Pipe_Hub.BLL.Extensions;
 using Serilog;
 
 namespace Pipe_Hub.UI;
@@ -10,7 +11,7 @@ internal static class Program
     [STAThread]
     static void Main()
     {
-        // 1. Cấu hình Serilog TRƯỚC khi làm gì khác
+        // 1. Serilog — cấu hình TRƯỚC khi làm gì khác
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
             .WriteTo.File(
@@ -21,7 +22,7 @@ internal static class Program
                 retainedFileCountLimit: 30)
             .CreateLogger();
 
-        // 2. Bắt lỗi toàn cục — đặt TRƯỚC khi tạo control
+        // 2. Global exception handler — TRƯỚC khi tạo control
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
         Application.ThreadException += (s, e) =>
@@ -48,20 +49,27 @@ internal static class Program
 
         try
         {
-            // 3. Cấu hình DI
+            // 3. Host + DI
             var host = Host.CreateDefaultBuilder()
                 .UseSerilog()
                 .ConfigureServices((context, services) =>
                 {
-                    // TODO D2: Đăng ký DbContext
-                    // TODO D3: Đăng ký Services (IAuthService, IGameService, ...)
-                    // TODO D3: Đăng ký Forms (LoginForm, MainForm, ...)
+                    // Đăng ký DbContextFactory + Services qua BLL
+                    services.AddPipeHubServices(context.Configuration);
+
+                    // Đăng ký Forms
+                    services.AddTransient<Form1>();
+
+                    // TODO D3: Đăng ký LoginForm, MainForm, ...
                 })
                 .Build();
 
-            // 4. Chạy app
+            // 4. Migrate + Seed (qua BLL — UI không chạm DbContext trực tiếp)
+            DatabaseInitializer.MigrateAndSeed(host.Services);
+
+            // 5. Chạy app
             ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            Application.Run(host.Services.GetRequiredService<Form1>());
         }
         catch (Exception ex)
         {
