@@ -251,3 +251,20 @@ Dùng fully-qualified `Microsoft.Data.SqlClient.SqlException` (không thêm usin
 **Quyết định:** Mọi gọi `PasswordHasher.Hash/Verify` trong AuthService bọc `await Task.Run(...)`; PasswordHasher.cs giữ nguyên (static, không biết gì về UI thread).
 
 **Lý do:** BCrypt tốn ~100–300ms — chạy trực tiếp sau await sẽ giật UI khi đăng nhập/đăng ký. Task.Run đẩy CPU-bound work ra thread pool.
+
+### 2026-10-12 — Repository Hybrid
+
+**Bối cảnh:** Đề PDF Ch.7 ghi "tầng truy xuất dữ liệu (Repository/DbContext)" — dấu / = HOẶC. Checklist ban đầu có IRepository<T> generic + UnitOfWork.
+
+**Quyết định:** Dùng HYBRID:
+- **IDbContextFactory trực tiếp:** AuthService, LogService, SystemConfigService, GameService, WalletService, KeyService — cho CRUD đơn giản.
+- **IUnitOfWork + Repos chuyên biệt:** OrderService.PurchaseAsync — cần transaction + RowVersion + atomic key assignment.
+- **IReportRepository:** ReportService — LINQ nặng (group-by, join).
+
+**Lý do:**
+- Đề cho phép cả Repository và DbContext (dấu /).
+- Không dùng IRepository<T> generic — thay bằng interface service (IAuthService, ILogService, ISystemConfigService) làm minh chứng Ch.2.
+- Tránh over-engineering: CRUD đơn giản không cần bọc Repository.
+- Vẫn có Repository pattern ở những chỗ cần (concurrency, LINQ nặng).
+
+**Minh chứng Ch.2:** IAuthService, ILogService, ISystemConfigService (đã có). Sẽ thêm IOrderService, IReportRepository, IReportBuilder, IPaymentGateway trong các task sau.
