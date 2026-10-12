@@ -561,7 +561,8 @@ namespace Pipe_Hub.DAL.Migrations
                     b.HasIndex("GameId");
 
                     b.HasIndex("UserId", "GameId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Reviews", null, t =>
                         {

@@ -187,3 +187,27 @@ Dùng fully-qualified `Microsoft.Data.SqlClient.SqlException` (không thêm usin
 - Admin cần xem game đã xóa để quản lý
 - Query filter áp dụng MỌI query → sẽ ẩn game với cả Admin/Publisher
 - Player query sẽ tự thêm `Where(g => !g.IsDeleted)` trong GameService
+
+### 2026-10-12 — Quy ước dấu số tiền Transaction.Amount
+
+**Bối cảnh:** Transaction ghi mọi biến động ví (TopUp, Purchase, Refund, Commission). Cần quy ước thống nhất để tính Balance = SUM(Amount).
+
+**Quyết định:** Amount dương cho tiền vào ví (TopUp, Refund), âm cho tiền ra (Purchase). Commission chốt khi làm OrderService (D4).
+
+**Lý do:** Balance ví luôn bằng tổng Amount các Transaction Success → kiểm tra đồng bộ dễ dàng bằng 1 query GROUP BY.
+
+### 2026-10-12 — Migration ReviewIndexFilter cho index Review
+
+**Bối cảnh:** ReviewConfiguration thêm `.HasFilter("[IsDeleted] = 0")` cho unique index (UserId, GameId) nhưng migration Init chưa có → model lệch snapshot, EF Core 9+ ném lỗi khi Migrate().
+
+**Quyết định:** Tạo migration riêng `ReviewIndexFilter` (DROP index cũ + CREATE lại có filter), KHÔNG xóa/sửa migration Init.
+
+**Lý do:** Migration đã apply lên DB không được sửa tay. Soft delete không chặn user viết lại review sau khi xóa.
+
+### 2026-10-12 — Idempotent seed dùng Roles.AnyAsync()
+
+**Bối cảnh:** DbSeeder từng đổi idempotent check sang Orders.AnyAsync() (bảng cuối). Nhưng toàn bộ seed đã bọc transaction all-or-nothing nên DB chỉ ở 2 trạng thái: trống hoặc đầy đủ.
+
+**Quyết định:** Dùng lại `Roles.AnyAsync()` (bảng đầu tiên được seed).
+
+**Lý do:** Với transaction, check bảng đầu là đủ và rẻ nhất. Tránh phụ thuộc vào thứ tự seed các bảng sau.
