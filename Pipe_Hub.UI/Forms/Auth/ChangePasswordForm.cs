@@ -147,7 +147,6 @@ public class ChangePasswordForm : Form
 
             var request = new ChangePasswordRequestDto
             {
-                UserId = _currentUser.UserId.Value,
                 OldPassword = oldPassword,
                 NewPassword = newPassword,
                 ConfirmNewPassword = confirmNew

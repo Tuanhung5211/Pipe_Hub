@@ -17,13 +17,16 @@ public class AuthService : IAuthService
 {
     private readonly IDbContextFactory<PipeHubDbContext> _contextFactory;
     private readonly ILogService _logService;
+    private readonly CurrentUserContext _currentUser;
 
     public AuthService(
         IDbContextFactory<PipeHubDbContext> contextFactory,
-        ILogService logService)
+        ILogService logService,
+        CurrentUserContext currentUser)
     {
         _contextFactory = contextFactory;
         _logService = logService;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<UserDto>> LoginAsync(LoginRequestDto request)
@@ -50,7 +53,7 @@ public class AuthService : IAuthService
             return Result<UserDto>.Failure("Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.");
         }
 
-        if (!PasswordHasher.Verify(request.Password, user.PasswordHash))
+        if (!await Task.Run(() => PasswordHasher.Verify(request.Password, user.PasswordHash)))
         {
             return Result<UserDto>.Failure("Tên đăng nhập hoặc mật khẩu không đúng.");
         }
@@ -121,7 +124,7 @@ public class AuthService : IAuthService
             {
                 Username = request.Username,
                 Email = request.Email,
-                PasswordHash = PasswordHasher.Hash(request.Password),
+                PasswordHash = await Task.Run(() => PasswordHasher.Hash(request.Password)),
                 FullName = request.FullName,
                 RoleId = playerRole.Id,
                 IsActive = true,
@@ -185,19 +188,21 @@ public class AuthService : IAuthService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId);
+        var userId = _currentUser.UserId ?? throw new AppException("Bạn chưa đăng nhập.");
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user is null)
         {
             throw new AppException("Không tìm thấy người dùng.");
         }
 
-        if (!PasswordHasher.Verify(request.OldPassword, user.PasswordHash))
+        if (!await Task.Run(() => PasswordHasher.Verify(request.OldPassword, user.PasswordHash)))
         {
             return Result.Failure("Mật khẩu cũ không đúng.");
         }
 
-        user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        user.PasswordHash = await Task.Run(() => PasswordHasher.Hash(request.NewPassword));
         user.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
+using Pipe_Hub.BLL.Mappings;
 using Pipe_Hub.DAL.Data;
 using Pipe_Hub.DAL.Entities;
 
@@ -48,24 +50,30 @@ public class LogService : ILogService
         }
     }
 
-    public async Task<List<LogEntry>> GetRecentAsync(int count = 100)
+    public async Task<List<LogEntryDto>> GetRecentAsync(int count = 100)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        return await context.LogEntries
+        var entries = await context.LogEntries
+            .Include(l => l.User)
             .OrderByDescending(l => l.CreatedAt)
             .Take(count)
             .ToListAsync();
+
+        return entries.Select(e => e.ToDto()).ToList();
     }
 
-    public async Task<List<LogEntry>> GetByUserAsync(int userId, int count = 50)
+    public async Task<List<LogEntryDto>> GetByUserAsync(int userId, int count = 50)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        return await context.LogEntries
+        var entries = await context.LogEntries
+            .Include(l => l.User)
             .Where(l => l.UserId == userId)
             .OrderByDescending(l => l.CreatedAt)
             .Take(count)
             .ToListAsync();
+
+        return entries.Select(e => e.ToDto()).ToList();
     }
 }

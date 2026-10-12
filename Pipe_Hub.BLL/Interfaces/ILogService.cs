@@ -1,10 +1,11 @@
-using Pipe_Hub.DAL.Entities;
+using Pipe_Hub.BLL.DTOs;
 
 namespace Pipe_Hub.BLL.Interfaces;
 
 /// <summary>
 /// Service ghi/đọc LogEntry — audit nghiệp vụ.
 /// KHÁC với Serilog (log kỹ thuật). LogService dùng cho LogViewerForm.
+/// UI chỉ dùng LogEntryDto, không thấy Entity.
 /// </summary>
 public interface ILogService
 {
@@ -17,10 +18,10 @@ public interface ILogService
     /// <summary>
     /// Lấy N log gần nhất, mới nhất trước.
     /// </summary>
-    Task<List<LogEntry>> GetRecentAsync(int count = 100);
+    Task<List<LogEntryDto>> GetRecentAsync(int count = 100);
 
     /// <summary>
     /// Lấy log của 1 user.
     /// </summary>
-    Task<List<LogEntry>> GetByUserAsync(int userId, int count = 50);
+    Task<List<LogEntryDto>> GetByUserAsync(int userId, int count = 50);
 }

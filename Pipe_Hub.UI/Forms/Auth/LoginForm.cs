@@ -100,7 +100,6 @@ public class LoginForm : Form
         _btnRegister.Click += BtnRegister_Click;
 
         AcceptButton = _btnLogin;
-        CancelButton = _btnRegister;
 
         Controls.AddRange(new Control[]
         {
@@ -159,9 +158,13 @@ public class LoginForm : Form
             _currentUser.SetUser(user.Id, user.Username, user.FullName, user.RoleName);
 
             var mainForm = _serviceProvider.GetRequiredService<MainForm>();
-            mainForm.FormClosed += (s, args) => Close();
             Hide();
             mainForm.ShowDialog();
+            var logout = mainForm.LogoutRequested;
+            mainForm.Dispose();
+            _currentUser.Clear();
+            if (logout) { _txtPassword.Clear(); _txtUsername.Clear(); Show(); _txtUsername.Focus(); }
+            else { Close(); }
         }
         catch (Exception ex)
         {

@@ -14,6 +14,8 @@ public class MainForm : Form
     private ToolStripStatusLabel _lblStatus = null!;
     private ToolStripStatusLabel _lblRole = null!;
 
+    public bool LogoutRequested { get; private set; }
+
     public MainForm(CurrentUserContext currentUser, IServiceProvider serviceProvider)
     {
         _currentUser = currentUser;
@@ -136,6 +138,7 @@ public class MainForm : Form
         AddPlaceholderItem(menuPublisher, "Trang game", "D10");
         AddPlaceholderItem(menuPublisher, "Thành tích", "D11");
         AddPlaceholderItem(menuPublisher, "Thanh toán Marketing", "D16");
+        AddPlaceholderItem(menuPublisher, "Bản đồ người chơi", "D21");
         _menuStrip.Items.Add(menuPublisher);
 
         var menuShared = new ToolStripMenuItem("Báo cáo");
@@ -152,6 +155,7 @@ public class MainForm : Form
         AddPlaceholderItem(menuPlayer, "Ví của tôi", "D5");
         AddPlaceholderItem(menuPlayer, "Lịch sử đơn hàng", "D7");
         AddPlaceholderItem(menuPlayer, "Hồ sơ cá nhân", "D7");
+        AddPlaceholderItem(menuPlayer, "Bản đồ cộng đồng", "D21");
         _menuStrip.Items.Add(menuPlayer);
 
         var menuChat = new ToolStripMenuItem("Trợ giúp");
@@ -194,6 +198,7 @@ public class MainForm : Form
             child.Close();
         }
 
+        LogoutRequested = true;
         _currentUser.Clear();
         Close();
     }
