@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pipe_Hub.BLL.Interfaces;
+using Pipe_Hub.BLL.Security;
+using Pipe_Hub.BLL.Services;
 using Pipe_Hub.DAL.Data;
 
 namespace Pipe_Hub.BLL.Extensions;
@@ -19,7 +22,14 @@ public static class ServiceCollectionExtensions
         services.AddDbContextFactory<PipeHubDbContext>(options =>
             options.UseSqlServer(connectionString));
 
-        // TODO D3: Đăng ký Services (IAuthService, IGameService, ...)
+        // ===== State classes (Singleton) =====
+        services.AddSingleton<CurrentUserContext>();
+        services.AddSingleton<ISystemConfigService, SystemConfigService>();
+
+        // ===== Services (Transient — không state) =====
+        services.AddTransient<IAuthService, AuthService>();
+        services.AddTransient<ILogService, LogService>();
+
         // TODO D3: Đăng ký Forms (LoginForm, MainForm, ...)
 
         return services;

@@ -57,10 +57,11 @@ internal static class Program
                     // Đăng ký DbContextFactory + Services qua BLL
                     services.AddPipeHubServices(context.Configuration);
 
-                    // Đăng ký Forms
-                    services.AddTransient<Form1>();
-
-                    // TODO D3: Đăng ký LoginForm, MainForm, ...
+                    // Đăng ký Forms (UI)
+                    services.AddTransient<Pipe_Hub.UI.Forms.Auth.LoginForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Auth.RegisterForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Auth.ChangePasswordForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Main.MainForm>();
                 })
                 .Build();
 
@@ -69,7 +70,7 @@ internal static class Program
 
             // 5. Chạy app
             ApplicationConfiguration.Initialize();
-            Application.Run(host.Services.GetRequiredService<Form1>());
+            Application.Run(host.Services.GetRequiredService<Pipe_Hub.UI.Forms.Auth.LoginForm>());
         }
         catch (Exception ex)
         {
