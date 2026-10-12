@@ -128,30 +128,32 @@ public static class DbSeeder
             context.GameKeys.AddRange(keys);
             await context.SaveChangesAsync();
 
-            // ===== 8. TOPUP BAN ĐẦU (đồng bộ với Balance ban đầu, -90 ngày) =====
-            var topUpDate = now.AddDays(-90);
+            // ===== 8. TOPUP BAN ĐẦU (đồng bộ với Balance ban đầu, rải -180/-150/-120 ngày) =====
+            var topUpDate1 = now.AddDays(-180);
+            var topUpDate2 = now.AddDays(-150);
+            var topUpDate3 = now.AddDays(-120);
             context.Transactions.Add(new Transaction
             {
                 UserId = player1.Id, WalletId = wallet1.Id, Amount = 500_000m,
                 Type = TransactionType.TopUp, Status = TransactionStatus.Success,
-                Description = "Nạp ví lần đầu", CreatedAt = topUpDate
+                Description = "Nạp ví lần đầu", CreatedAt = topUpDate1
             });
             context.Transactions.Add(new Transaction
             {
                 UserId = player2.Id, WalletId = wallet2.Id, Amount = 300_000m,
                 Type = TransactionType.TopUp, Status = TransactionStatus.Success,
-                Description = "Nạp ví lần đầu", CreatedAt = topUpDate
+                Description = "Nạp ví lần đầu", CreatedAt = topUpDate2
             });
             context.Transactions.Add(new Transaction
             {
                 UserId = player3.Id, WalletId = wallet3.Id, Amount = 1_000_000m,
                 Type = TransactionType.TopUp, Status = TransactionStatus.Success,
-                Description = "Nạp ví lần đầu", CreatedAt = topUpDate
+                Description = "Nạp ví lần đầu", CreatedAt = topUpDate3
             });
             await context.SaveChangesAsync();
 
-            // ===== 9. ĐƠN ORD-2026-0001 (player1, Sky Adventure, -50 ngày) =====
-            var order1Date = now.AddDays(-50);
+            // ===== 9. ĐƠN ORD-2026-0001 (player1, Sky Adventure, -150 ngày) =====
+            var order1Date = now.AddDays(-150);
             var order1 = new Order
             {
                 OrderCode = "ORD-2026-0001", UserId = player1.Id, TotalAmount = 199_000m,
@@ -180,8 +182,8 @@ public static class DbSeeder
             });
             await context.SaveChangesAsync();
 
-            // ===== 10. ĐƠN ORD-2026-0002 (player2, Dungeon Master sale, -12 ngày) =====
-            var order2Date = now.AddDays(-12);
+            // ===== 10. ĐƠN ORD-2026-0002 (player2, Dungeon Master sale, -45 ngày) =====
+            var order2Date = now.AddDays(-45);
             var order2 = new Order
             {
                 OrderCode = "ORD-2026-0002", UserId = player2.Id, TotalAmount = 199_000m,
@@ -213,9 +215,9 @@ public static class DbSeeder
             // ===== 11. 3 ĐƠN CỦA PLAYER3 =====
             var player3Orders = new[]
             {
-                (Code: "ORD-2026-0003", Game: games[2], Price: 249_000m, DaysAgo: 70),
-                (Code: "ORD-2026-0004", Game: games[3], Price: 349_000m, DaysAgo: 35),
-                (Code: "ORD-2026-0005", Game: games[4], Price: 99_000m, DaysAgo: 20)
+                (Code: "ORD-2026-0003", Game: games[2], Price: 249_000m, DaysAgo: 90),
+                (Code: "ORD-2026-0004", Game: games[3], Price: 349_000m, DaysAgo: 60),
+                (Code: "ORD-2026-0005", Game: games[4], Price: 99_000m, DaysAgo: 15)
             };
 
             foreach (var (Code, Game, Price, DaysAgo) in player3Orders)
