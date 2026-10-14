@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pipe_Hub.BLL.Security;
 using Pipe_Hub.UI.Forms.Auth;
+using Pipe_Hub.UI.Forms.Player;
 
 namespace Pipe_Hub.UI.Forms.Main;
 
@@ -152,9 +153,23 @@ public class MainForm : Form
     private void BuildPlayerMenu()
     {
         var menuPlayer = new ToolStripMenuItem("Người chơi");
-        AddPlaceholderItem(menuPlayer, "Cửa hàng game", "D5");
+
+        var menuStore = new ToolStripMenuItem("Cửa hàng game")
+        {
+            ShortcutKeys = Keys.Control | Keys.S
+        };
+        menuStore.Click += (s, e) => OpenMdiChild<StoreForm>();
+        menuPlayer.DropDownItems.Add(menuStore);
+
         AddPlaceholderItem(menuPlayer, "Thư viện game", "D7");
-        AddPlaceholderItem(menuPlayer, "Ví của tôi", "D5");
+
+        var menuWallet = new ToolStripMenuItem("Ví của tôi")
+        {
+            ShortcutKeys = Keys.Control | Keys.W
+        };
+        menuWallet.Click += (s, e) => OpenMdiChild<WalletForm>();
+        menuPlayer.DropDownItems.Add(menuWallet);
+
         AddPlaceholderItem(menuPlayer, "Lịch sử đơn hàng", "D7");
         AddPlaceholderItem(menuPlayer, "Hồ sơ cá nhân", "D7");
         AddPlaceholderItem(menuPlayer, "Bản đồ cộng đồng", "D21");
@@ -183,6 +198,27 @@ public class MainForm : Form
     {
         var changePassForm = _serviceProvider.GetRequiredService<ChangePasswordForm>();
         changePassForm.ShowDialog(this);
+    }
+
+    /// <summary>
+    /// Mở form con dạng MDI Child. Nếu đã mở → activate thay vì tạo mới.
+    /// </summary>
+    private void OpenMdiChild<TForm>() where TForm : Form
+    {
+        // Check form đã mở chưa
+        var existing = MdiChildren.OfType<TForm>().FirstOrDefault();
+        if (existing is not null)
+        {
+            if (existing.WindowState == FormWindowState.Minimized)
+                existing.WindowState = FormWindowState.Normal;
+            existing.Activate();
+            return;
+        }
+
+        // Tạo mới qua DI
+        var form = _serviceProvider.GetRequiredService<TForm>();
+        form.MdiParent = this;
+        form.Show();
     }
 
     private void MenuLogout_Click(object? sender, EventArgs e)

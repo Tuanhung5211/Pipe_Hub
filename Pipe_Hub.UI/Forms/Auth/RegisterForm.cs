@@ -211,6 +211,13 @@ public class RegisterForm : Form
         });
     }
 
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        // Cho phép đóng form dù validation đang fail (tránh bug không đóng được)
+        AutoValidate = AutoValidate.Disable;
+        base.OnFormClosing(e);
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)

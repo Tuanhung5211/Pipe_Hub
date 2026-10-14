@@ -62,6 +62,8 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Auth.RegisterForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Auth.ChangePasswordForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Main.MainForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Player.StoreForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Player.WalletForm>();
                 })
                 .Build();
 
