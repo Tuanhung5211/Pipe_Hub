@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Pipe_Hub.BLL/Pipe_Hub.BLL.csproj" />
   <Project Path="Pipe_Hub.DAL/Pipe_Hub.DAL.csproj" />
+  <Project Path="Pipe_Hub.Tests/Pipe_Hub.Tests.csproj" />
   <Project Path="Pipe_Hub.UI/Pipe_Hub.UI.csproj" />
 </Solution>

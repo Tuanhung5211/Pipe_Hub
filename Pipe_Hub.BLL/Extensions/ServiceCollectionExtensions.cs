@@ -30,6 +30,12 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<ILogService, LogService>();
 
+        // ===== Services nhóm Game/Commerce (Transient) =====
+        services.AddTransient<IGameService, GameService>();
+        services.AddTransient<IWalletService, WalletService>();
+        services.AddTransient<IOrderService, OrderService>();
+        services.AddTransient<IKeyService, KeyService>();
+
         // TODO D3: Đăng ký Forms (LoginForm, MainForm, ...)
 
         return services;

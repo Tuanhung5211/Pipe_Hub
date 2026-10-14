@@ -36,5 +36,15 @@ public class PipeHubDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PipeHubDbContext).Assembly);
+
+        // SQLite (unit test) không hỗ trợ rowversion — dùng byte[] thường
+        if (Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            modelBuilder.Entity<Pipe_Hub.DAL.Entities.Wallet>()
+                .Property(w => w.RowVersion)
+                .IsConcurrencyToken(false)
+                .ValueGeneratedNever()
+                .HasDefaultValue(Array.Empty<byte>());
+        }
     }
 }
