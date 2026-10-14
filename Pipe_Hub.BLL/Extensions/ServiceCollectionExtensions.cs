@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IWalletService, WalletService>();
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<IKeyService, KeyService>();
+        services.AddTransient<IReviewService, ReviewService>();
 
         return services;
     }

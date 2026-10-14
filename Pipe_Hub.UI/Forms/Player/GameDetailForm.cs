@@ -1,5 +1,6 @@
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.BLL.Security;
+using Pipe_Hub.UI.Controls;
 using Pipe_Hub.UI.Helpers;
 
 namespace Pipe_Hub.UI.Forms.Player;
@@ -9,7 +10,9 @@ public class GameDetailForm : Form
     private readonly IGameService _gameService;
     private readonly IOrderService _orderService;
     private readonly IWalletService _walletService;
+    private readonly IReviewService _reviewService;
     private readonly CurrentUserContext _currentUser;
+    private readonly IServiceProvider _serviceProvider;
     private readonly int _gameId;
 
     private Label _lblTitle = null!;
@@ -23,18 +26,24 @@ public class GameDetailForm : Form
     private Label _lblBalance = null!;
     private Button _btnBuy = null!;
     private Button _btnClose = null!;
+    private ReviewPanel _reviewPanel = null!;
+    private TabControl _tabs = null!;
 
     public GameDetailForm(
         IGameService gameService,
         IOrderService orderService,
         IWalletService walletService,
+        IReviewService reviewService,
         CurrentUserContext currentUser,
+        IServiceProvider serviceProvider,
         int gameId)
     {
         _gameService = gameService;
         _orderService = orderService;
         _walletService = walletService;
+        _reviewService = reviewService;
         _currentUser = currentUser;
+        _serviceProvider = serviceProvider;
         _gameId = gameId;
 
         InitializeComponents();
@@ -222,7 +231,26 @@ public class GameDetailForm : Form
             _btnBuy, _btnClose
         });
 
-        Controls.Add(pnlMain);
+        _tabs = new TabControl
+        {
+            Dock = DockStyle.Fill,
+            Font = new Font("Segoe UI", 9F)
+        };
+
+        var tabInfo = new TabPage("Thông tin") { Padding = new Padding(3) };
+        var tabReview = new TabPage("Đánh giá") { Padding = new Padding(3) };
+
+        _reviewPanel = new ReviewPanel { Dock = DockStyle.Fill };
+        tabReview.Controls.Add(_reviewPanel);
+
+        pnlMain.Dock = DockStyle.Fill;
+        tabInfo.Controls.Add(pnlMain);
+
+        _tabs.TabPages.Add(tabInfo);
+        _tabs.TabPages.Add(tabReview);
+
+        Controls.Clear();
+        Controls.Add(_tabs);
         CancelButton = _btnClose;
     }
 
@@ -274,6 +302,19 @@ public class GameDetailForm : Form
                 _btnBuy.Enabled = false;
                 _btnBuy.Text = "Chưa mở bán";
             }
+
+            // Check đã mua → disable nút Mua + set review panel
+            var hasPurchased = await _reviewService.HasPurchasedGameAsync(_gameId);
+
+            if (hasPurchased)
+            {
+                _btnBuy.Enabled = false;
+                _btnBuy.Text = "Đã mua";
+                _btnBuy.BackColor = Color.Gray;
+            }
+
+            await _reviewPanel.LoadAsync(_reviewService, _gameId);
+            _reviewPanel.SetPurchased(hasPurchased);
         });
     }
 
