@@ -1,6 +1,5 @@
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
-using Pipe_Hub.BLL.Security;
 using Pipe_Hub.UI.Forms.Base;
 using Pipe_Hub.UI.Helpers;
 
@@ -9,16 +8,14 @@ namespace Pipe_Hub.UI.Forms.Player;
 public class WalletForm : BaseCrudForm
 {
     private readonly IWalletService _walletService;
-    private readonly CurrentUserContext _currentUser;
 
     private Label _lblBalanceTitle = null!;
     private Label _lblBalance = null!;
     private Panel _topPanel = null!;
 
-    public WalletForm(IWalletService walletService, CurrentUserContext currentUser)
+    public WalletForm(IWalletService walletService)
     {
         _walletService = walletService;
-        _currentUser = currentUser;
 
         Text = "Ví của tôi";
         _btnEdit.Visible = false;
@@ -119,7 +116,7 @@ public class WalletForm : BaseCrudForm
         using var dialog = new Form
         {
             Text = "Nạp ví",
-            Size = new Size(360, 220),
+            ClientSize = new Size(360, 220),
             StartPosition = FormStartPosition.CenterParent,
             FormBorderStyle = FormBorderStyle.FixedDialog,
             MaximizeBox = false,

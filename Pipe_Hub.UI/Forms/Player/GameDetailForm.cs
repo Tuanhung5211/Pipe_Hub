@@ -1,5 +1,4 @@
 using Pipe_Hub.BLL.Interfaces;
-using Pipe_Hub.BLL.Security;
 using Pipe_Hub.UI.Controls;
 using Pipe_Hub.UI.Helpers;
 
@@ -11,7 +10,6 @@ public class GameDetailForm : Form
     private readonly IOrderService _orderService;
     private readonly IWalletService _walletService;
     private readonly IReviewService _reviewService;
-    private readonly CurrentUserContext _currentUser;
     private readonly IServiceProvider _serviceProvider;
     private readonly int _gameId;
 
@@ -34,7 +32,6 @@ public class GameDetailForm : Form
         IOrderService orderService,
         IWalletService walletService,
         IReviewService reviewService,
-        CurrentUserContext currentUser,
         IServiceProvider serviceProvider,
         int gameId)
     {
@@ -42,7 +39,6 @@ public class GameDetailForm : Form
         _orderService = orderService;
         _walletService = walletService;
         _reviewService = reviewService;
-        _currentUser = currentUser;
         _serviceProvider = serviceProvider;
         _gameId = gameId;
 

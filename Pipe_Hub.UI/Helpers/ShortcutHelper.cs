@@ -14,7 +14,7 @@ public static class ShortcutHelper
         form.KeyPreview = true;
         form.KeyDown += (s, e) =>
         {
-            if (e.KeyCode == key || (e.KeyCode | e.Modifiers) == key)
+            if ((e.KeyCode | e.Modifiers) == key)
             {
                 action();
                 e.Handled = true;
