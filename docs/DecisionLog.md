@@ -268,3 +268,139 @@ Dùng fully-qualified `Microsoft.Data.SqlClient.SqlException` (không thêm usin
 - Vẫn có Repository pattern ở những chỗ cần (concurrency, LINQ nặng).
 
 **Minh chứng Ch.2:** IAuthService, ILogService, ISystemConfigService (đã có). Sẽ thêm IOrderService, IReportRepository, IReportBuilder, IPaymentGateway trong các task sau.
+
+---
+
+## D4 — Repository và Services
+
+### 2026-10-13 — Chia D4 thành 10 task nhỏ
+
+**Bối cảnh:** PurchaseAsync là method phức tạp nhất dự án (transaction + RowVersion + gán key atomic). Làm gộp dễ sai và khó review.
+
+**Quyết định:** Chia D4 thành D4.1→D4.10 (repos → từng service → DI → test → commit).
+
+**Lý do:** Tách task nhỏ giúp verify từng bước, lỗi lộ sớm ở đúng chỗ thay vì dồn cuối.
+
+### 2026-10-13 — Generic constraint `where T : BaseEntity` cho IRepository
+
+**Bối cảnh:** `GetByIdAsync` truy cập `e.Id` nên cần đảm bảo mọi T đều có Id.
+
+**Quyết định:** Constraint bắt buộc `where T : BaseEntity` trên cả interface và implementation.
+
+**Lý do:** BaseEntity cung cấp Id cho mọi entity, compiler bắt lỗi ngay nếu dùng sai kiểu.
+
+### 2026-10-13 — UnitOfWork chia sẻ 1 DbContext cho 3 repo
+
+**Bối cảnh:** PurchaseAsync cần atomic trên Order + Wallet + GameKey — mỗi repo một context riêng thì không share transaction được.
+
+**Quyết định:** 1 context dùng chung, 3 repo lazy-init qua `??=`, transaction wrap ở UoW với null-check.
+
+**Lý do:** Đảm bảo all-or-nothing cho nghiệp vụ mua game; repo chỉ tạo khi dùng tới.
+
+### 2026-10-13 — PurchaseAsync dùng IDbContextFactory + UnitOfWork kết hợp
+
+**Bối cảnh:** Cần theo Hybrid đã chốt (CRUD đơn giản dùng context, phần atomic dùng repo) mà không đăng ký UoW vào DI.
+
+**Quyết định:** Tạo context từ factory → `new UnitOfWork(context)` thủ công → BeginTransaction; key lấy qua `uow.GameKeys`.
+
+**Lý do:** Giữ đúng Hybrid; RowVersion tự check ở SaveChanges, catch DbUpdateConcurrencyException trả Failure thay vì throw.
+
+### 2026-10-13 — SQLite override RowVersion trong DbContext
+
+**Bối cảnh:** Wallet dùng `IsRowVersion()` của SQL Server nhưng SQLite không hỗ trợ → test seed fail NOT NULL.
+
+**Quyết định:** Trong OnModelCreating, nếu ProviderName chứa "Sqlite" thì override thành byte[] thường (`IsConcurrencyToken(false)`, `ValueGeneratedNever()`, default rỗng).
+
+**Lý do:** Test chạy SQLite in-memory; không dùng `Database.IsSqlite()` vì DAL không có package Sqlite. Production SQL Server không ảnh hưởng.
+
+### 2026-10-13 — Test PurchaseAsync với 3 case + SQLite in-memory
+
+**Bối cảnh:** PurchaseAsync là lõi tiền bạc, cần chứng minh thiếu tiền/hết key/thành công đều đúng.
+
+**Quyết định:** 3 test xUnit trên SQLite in-memory (giữ connection mở, EnsureCreated): thiếu tiền, hết key, thành công kèm verify Balance/key/Order/Transaction. Mock ILogService bằng NSubstitute, CurrentUserContext dùng thật.
+
+**Lý do:** SQLite hỗ trợ transaction thật (EF InMemory không có); mỗi test connection riêng nên isolated.
+
+### 2026-10-13 — DI lifetime Transient cho 4 service D4
+
+**Bối cảnh:** Cần chốt lifetime cho Game/Wallet/Order/KeyService khi wiring DI.
+
+**Quyết định:** Cả 4 = Transient. Không đăng ký UnitOfWork vào DI (tạo thủ công trong PurchaseAsync).
+
+**Lý do:** Cả 4 stateless, tạo context mới mỗi call qua factory nên thread-safe.
+
+---
+
+## D5 — Player Forms và MDI
+
+### 2026-10-13 — DebounceTimer cho tìm kiếm realtime (300ms)
+
+**Bối cảnh:** Tìm kiếm gõ từng ký tự mà query mỗi lần sẽ spam DB và giật UI.
+
+**Quyết định:** Helper DebounceTimer dùng WinForms Timer (đúng UI thread): chờ 300ms sau lần gõ cuối mới gọi OnSearchChanged.
+
+**Lý do:** Gõ liên tục chỉ trigger 1 lần filter; dùng Timer của WinForms nên không lỗi cross-thread.
+
+### 2026-10-13 — BaseCrudForm abstract + 5 abstract method
+
+**Bối cảnh:** Nhiều form CRUD có layout giống nhau (toolbar + lưới + đếm dòng) nhưng data/handler khác nhau.
+
+**Quyết định:** Form cha abstract với ToolStrip (Thêm/Sửa/Xóa/Làm mới/Tìm) + DataGridView + StatusStrip; 5 abstract method bắt subclass override; Ctrl+F focus ô tìm, F5 refresh.
+
+**Lý do:** Thống nhất UX các form list; debounce Dispose đúng để không leak Timer.
+
+### 2026-10-13 — StoreForm ẩn 3 nút CRUD
+
+**Bối cảnh:** Player chỉ được xem/mua game, không có quyền thêm/sửa/xóa.
+
+**Quyết định:** StoreForm kế thừa BaseCrudForm nhưng ẩn `_btnAdd/_btnEdit/_btnDelete`; double-click mở chi tiết; search lọc client-side theo tên/NPH/thể loại; giá format N0.
+
+**Lý do:** Tái dùng layout cha mà vẫn đúng phân quyền; filter client-side đủ nhanh, không cần query lại.
+
+### 2026-10-13 — WalletForm thêm panel Balance 100px
+
+**Bối cảnh:** Player cần thấy số dư nổi bật + nút nạp ví + lịch sử yêu cầu nạp cùng một chỗ.
+
+**Quyết định:** Panel top 100px hiển thị Balance cỡ chữ 22 + nút Nạp ví; dialog nhập tiền + ComboBox phương thức; grid lịch sử TopUpRequest.
+
+**Lý do:** Số dư là thông tin quan trọng nhất của ví; gom nạp + lịch sử vào một form cho tiện.
+
+### 2026-10-13 — GameDetailForm không kế thừa BaseCrudForm
+
+**Bối cảnh:** Form chi tiết game là layout đọc + 1 nút Mua, không phải danh sách CRUD.
+
+**Quyết định:** Kế thừa Form thường với panel scroll; hiển thị giá gốc gạch ngang khi sale; disable nút Mua nếu game chưa Approved; mua xong hiện key + reload balance.
+
+**Lý do:** Ép vào BaseCrudForm sẽ thừa toolbar/lưới; form chi tiết cần layout tự do.
+
+### 2026-10-13 — ActivatorUtilities cho form có param gameId
+
+**Bối cảnh:** GameDetailForm cần `int gameId` qua constructor nên không đăng ký DI thường được.
+
+**Quyết định:** StoreForm dùng `ActivatorUtilities.CreateInstance<GameDetailForm>(_serviceProvider, selected.Id)` — DI tự inject service, truyền tay gameId.
+
+**Lý do:** Vừa dùng được DI cho service, vừa truyền được tham số runtime; không cần factory class riêng.
+
+### 2026-10-13 — Chuyển từ ShowDialog sang MDI Child
+
+**Bối cảnh:** Đề yêu cầu MainForm MDI Parent nhưng các form mở modal thì không đúng chuẩn desktop.
+
+**Quyết định:** `OpenMdiChild<TForm>()` generic: đã mở thì activate (bỏ minimize nếu cần), chưa thì resolve DI + `MdiParent = this` + `Show()`. StoreForm/WalletForm mở qua menu Ctrl+S/Ctrl+W; GameDetailForm và ChangePasswordForm giữ modal vì là dialog ngắn.
+
+**Lý do:** Đúng yêu cầu MDI của đề; tránh mở trùng nhiều cửa sổ cùng form.
+
+### 2026-10-13 — Shortcut Ctrl+S/Ctrl+W trong MainForm
+
+**Bối cảnh:** Đề Ch.4 yêu cầu phím tắt thực tế; Player mở 2 form dùng nhiều nhất là Store và Wallet.
+
+**Quyết định:** Ctrl+S mở Cửa hàng, Ctrl+W mở Ví (cùng hệ Ctrl+P đổi MK, Ctrl+Q đăng xuất đã có).
+
+**Lý do:** Thao tác nhanh không cần chuột; dùng chung helper RegisterShortcut.
+
+### 2026-10-13 — Fix OnFormClosing cho form Auth
+
+**Bối cảnh:** AutoValidate + Validating cancel khiến bấm X không đóng được form khi có lỗi đỏ.
+
+**Quyết định:** Override OnFormClosing đặt `AutoValidate = Disable` trước `base.OnFormClosing` ở cả 3 form Auth (pattern chuẩn WinForms).
+
+**Lý do:** Nút Hủy/Thoát phải bấm được mọi lúc; `ValidateChildren()` ở nút chính vẫn chạy khi submit nên không mất validate.
