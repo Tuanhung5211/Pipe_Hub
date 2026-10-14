@@ -48,7 +48,6 @@ public class MainForm : Form
         _lblStatus = new ToolStripStatusLabel
         {
             Text = $"Xin chào, {_currentUser.FullName ?? _currentUser.Username}",
-            Spring = true,
             TextAlign = ContentAlignment.MiddleLeft
         };
 

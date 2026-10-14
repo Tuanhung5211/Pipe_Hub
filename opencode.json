@@ -8,9 +8,11 @@
       "Pipe_Hub.UI/**": "allow",
       "Pipe_Hub.BLL/**": "allow",
       "Pipe_Hub.DAL/**": "allow",
+      "Pipe_Hub.Tests/**": "allow",
       "docs/**": "allow",
       "database/**": "allow",
       "*.sln": "allow",
+      "*.slnx": "allow",
       "*.md": "allow",
       ".gitignore": "allow",
       "opencode.json": "allow"
