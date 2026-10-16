@@ -18,4 +18,6 @@ public record GameDto
     public IReadOnlyList<string> GenreNames { get; init; } = new List<string>();
     public IReadOnlyList<string> TagNames { get; init; } = new List<string>();
     public IReadOnlyList<string> LanguageNames { get; init; } = new List<string>();
+
+    public string GenresText => string.Join(", ", GenreNames);
 }

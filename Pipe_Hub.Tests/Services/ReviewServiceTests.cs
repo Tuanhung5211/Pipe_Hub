@@ -350,6 +350,30 @@ public class ReviewServiceTests : IAsyncLifetime
     }
 
     // ===========================================================
+    // Test 10: CreateAsync sau khi soft delete → Success (unique có filter)
+    // ===========================================================
+    [Fact]
+    public async Task CreateAsync_AfterSoftDelete_ReturnsSuccess()
+    {
+        // Arrange: đã mua + tạo review + soft delete
+        await SetupPurchaseAsync(_playerId, "REVIEW-REDO-001");
+        var service = new ReviewService(_factory, _currentUser, _logService);
+
+        var create1 = await service.CreateAsync(_gameId, 5, "Lần 1");
+        Assert.True(create1.IsSuccess);
+
+        var deleteResult = await service.SoftDeleteAsync(create1.Data!.Id);
+        Assert.True(deleteResult.IsSuccess);
+
+        // Act: tạo lại review mới
+        var create2 = await service.CreateAsync(_gameId, 4, "Lần 2");
+
+        // Assert: thành công (vì unique index có filter IsDeleted=0)
+        Assert.True(create2.IsSuccess);
+        Assert.Equal(4, create2.Data!.Rating);
+    }
+
+    // ===========================================================
     // Custom Factory cho test (dùng connection đang mở)
     // ===========================================================
     private class TestDbContextFactory : IDbContextFactory<PipeHubDbContext>

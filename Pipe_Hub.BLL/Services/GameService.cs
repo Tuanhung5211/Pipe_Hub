@@ -63,7 +63,7 @@ public class GameService : IGameService
             .Include(g => g.Genres)
             .Include(g => g.Tags)
             .Include(g => g.Languages)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id && !g.IsDeleted);
 
         if (game is null)
         {
@@ -201,7 +201,7 @@ public class GameService : IGameService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId && !g.IsDeleted);
         if (game is null)
         {
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");
@@ -240,7 +240,7 @@ public class GameService : IGameService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId && !g.IsDeleted);
         if (game is null)
         {
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");
@@ -274,7 +274,7 @@ public class GameService : IGameService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId && !g.IsDeleted);
         if (game is null)
         {
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");

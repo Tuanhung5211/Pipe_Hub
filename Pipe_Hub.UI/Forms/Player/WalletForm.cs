@@ -12,6 +12,7 @@ public class WalletForm : BaseCrudForm
     private Label _lblBalanceTitle = null!;
     private Label _lblBalance = null!;
     private Panel _topPanel = null!;
+    private List<TopUpRequestDto> _allRequests = new();
 
     public WalletForm(IWalletService walletService)
     {
@@ -100,14 +101,29 @@ public class WalletForm : BaseCrudForm
 
             // Load lịch sử yêu cầu nạp
             var requests = await _walletService.GetMyTopUpRequestsAsync();
-            BindRequestsToGrid(requests);
-            SetCountLabel(requests.Count);
+            _allRequests = requests.ToList();
+            BindRequestsToGrid(_allRequests);
+            SetCountLabel(_allRequests.Count);
         });
     }
 
     protected override void OnSearchChanged(string keyword)
     {
-        // Không filter trên WalletForm
+        if (string.IsNullOrWhiteSpace(keyword))
+        {
+            BindRequestsToGrid(_allRequests);
+            SetCountLabel(_allRequests.Count);
+            return;
+        }
+
+        var filtered = _allRequests.Where(r =>
+            (r.Status?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (r.PaymentMethod?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (r.RejectReason?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false)
+        ).ToList();
+
+        BindRequestsToGrid(filtered);
+        SetCountLabel(filtered.Count);
     }
 
     private async void BtnTopUp_Click(object? sender, EventArgs e)
@@ -124,6 +140,9 @@ public class WalletForm : BaseCrudForm
             Font = new Font("Segoe UI", 9F)
         };
 
+        var errorProvider = new ErrorProvider { BlinkStyle = ErrorBlinkStyle.NeverBlink };
+        dialog.AutoValidate = AutoValidate.EnableAllowFocusChange;
+
         var lblAmount = new Label
         {
             Text = "Số tiền nạp:",
@@ -136,6 +155,21 @@ public class WalletForm : BaseCrudForm
             Location = new Point(20, 50),
             Size = new Size(300, 25),
             Text = "100000"
+        };
+        txtAmount.Validating += (s, e) =>
+        {
+            var isValid = decimal.TryParse(txtAmount.Text, out var amt)
+                && amt >= 10_000
+                && amt <= 50_000_000;
+            e.Cancel = !isValid;
+
+            var msg = !decimal.TryParse(txtAmount.Text, out _)
+                ? "Số tiền không hợp lệ."
+                : amt < 10_000
+                    ? "Số tiền nạp tối thiểu là 10,000."
+                    : "Số tiền nạp tối đa là 50,000,000.";
+
+            errorProvider.SetError(txtAmount, isValid ? "" : msg);
         };
 
         var lblNote = new Label
@@ -170,6 +204,16 @@ public class WalletForm : BaseCrudForm
             Size = new Size(90, 30),
             DialogResult = DialogResult.OK
         };
+        btnOk.Click += (s, e) =>
+        {
+            if (!decimal.TryParse(txtAmount.Text, out var amt)
+                || amt < 10_000
+                || amt > 50_000_000)
+            {
+                errorProvider.SetError(txtAmount, "Số tiền không hợp lệ (10,000 - 50,000,000).");
+                dialog.DialogResult = DialogResult.None;
+            }
+        };
 
         var btnCancel = new Button
         {
@@ -185,6 +229,7 @@ public class WalletForm : BaseCrudForm
         });
         dialog.AcceptButton = btnOk;
         dialog.CancelButton = btnCancel;
+        dialog.FormClosed += (s, e) => errorProvider.Dispose();
 
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 

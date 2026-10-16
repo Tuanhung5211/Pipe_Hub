@@ -20,7 +20,8 @@ public class StoreForm : BaseCrudForm
 
         Text = "Cửa hàng game";
         _btnAdd.Visible = false;
-        _btnEdit.Visible = false;
+        _btnEdit.Visible = true;
+        _btnEdit.Text = "Chi tiết / Mua";
         _btnDelete.Visible = false;
 
         Load += async (s, e) => await OnRefreshClickedAsync();
@@ -147,21 +148,11 @@ public class StoreForm : BaseCrudForm
         _grid.Columns.Add(new DataGridViewTextBoxColumn
         {
             HeaderText = "Thể loại",
-            Name = "colGenres",
+            DataPropertyName = "GenresText",
             FillWeight = 24
         });
 
-        foreach (var game in games)
-        {
-            var idx = _grid.Rows.Add(
-                game.Id,
-                game.Title,
-                game.PublisherName,
-                game.Price,
-                (object?)game.SalePrice ?? DBNull.Value,
-                game.Status,
-                string.Join(", ", game.GenreNames));
-        }
+        _grid.DataSource = new SortableBindingList<GameDto>(games);
     }
 
     private GameDto? GetSelectedGame()

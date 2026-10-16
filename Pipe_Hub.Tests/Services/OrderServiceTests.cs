@@ -225,6 +225,30 @@ public class OrderServiceTests : IAsyncLifetime
     }
 
     // ===========================================================
+    // Test 4: PurchaseAsync lần 2 cùng game → Failure "đã sở hữu"
+    // ===========================================================
+    [Fact]
+    public async Task PurchaseAsync_WhenCalledTwice_ReturnsFailure()
+    {
+        // Arrange: mua lần 1
+        var service = new OrderService(_factory, _currentUser, _logService);
+        var firstResult = await service.PurchaseAsync(_gameId);
+        Assert.True(firstResult.IsSuccess);
+
+        // Act: mua lần 2 cùng game
+        var secondResult = await service.PurchaseAsync(_gameId);
+
+        // Assert: lần 2 fail với message "đã sở hữu"
+        Assert.False(secondResult.IsSuccess);
+        Assert.Contains("sở hữu", secondResult.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+
+        // Verify: chỉ có 1 Order, 1 Transaction, 1 key Activated
+        await using var ctx = _factory.CreateDbContext();
+        var orderCount = await ctx.Orders.CountAsync(o => o.UserId == _userId);
+        Assert.Equal(1, orderCount);
+    }
+
+    // ===========================================================
     // Custom Factory cho test (dùng connection đang mở)
     // ===========================================================
     private class TestDbContextFactory : IDbContextFactory<PipeHubDbContext>

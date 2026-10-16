@@ -89,6 +89,8 @@ public class ReviewPanel : UserControl
             Dock = DockStyle.Fill,
             AllowUserToAddRows = false,
             AllowUserToDeleteRows = false,
+            AllowUserToResizeColumns = false,
+            AllowUserToResizeRows = false,
             ReadOnly = true,
             SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             MultiSelect = false,
@@ -96,6 +98,16 @@ public class ReviewPanel : UserControl
             RowHeadersVisible = false,
             BackgroundColor = Color.White,
             BorderStyle = BorderStyle.None
+        };
+
+        // Custom cell format cho rating → hiển thị sao (đăng ký 1 lần duy nhất)
+        _grid.CellFormatting += (s, e) =>
+        {
+            if (e.ColumnIndex == 1 && e.Value is int rating)
+            {
+                e.Value = new string('★', rating) + new string('☆', 5 - rating);
+                e.FormattingApplied = true;
+            }
         };
 
         _lblStatus = new Label
@@ -184,16 +196,6 @@ public class ReviewPanel : UserControl
             FillWeight = 20,
             DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" }
         });
-
-        // Custom cell format cho rating → hiển thị sao
-        _grid.CellFormatting += (s, e) =>
-        {
-            if (e.ColumnIndex == 1 && e.Value is int rating)
-            {
-                e.Value = new string('★', rating) + new string('☆', 5 - rating);
-                e.FormattingApplied = true;
-            }
-        };
 
         _grid.DataSource = reviews.ToList();
     }

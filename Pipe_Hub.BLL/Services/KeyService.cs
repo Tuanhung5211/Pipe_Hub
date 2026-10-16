@@ -40,7 +40,7 @@ public class KeyService : IKeyService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId && !g.IsDeleted);
         if (game is null)
         {
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");
@@ -61,33 +61,58 @@ public class KeyService : IKeyService
         if (prefix.Length > 10) prefix = prefix.Substring(0, 10);
         if (string.IsNullOrEmpty(prefix)) prefix = "GAME";
 
-        var newKeys = new List<GameKey>();
         var generated = new HashSet<string>();
 
-        for (int i = 0; i < count; i++)
+        // Sinh ban đầu trên RAM (chỉ check trùng giữa các key sinh ra)
+        while (generated.Count < count)
         {
-            string keyValue;
-            int attempts = 0;
-            do
-            {
-                keyValue = $"{prefix}-{GenerateRandomSegment(6)}";
-                attempts++;
-                if (attempts > 100)
-                {
-                    return Result<IReadOnlyList<GameKeyDto>>.Failure(
-                        "Không sinh được key duy nhất sau 100 lần thử. Vui lòng thử lại.");
-                }
-            } while (generated.Contains(keyValue) ||
-                     await context.GameKeys.AnyAsync(k => k.Key == keyValue));
-
-            generated.Add(keyValue);
-            newKeys.Add(new GameKey
-            {
-                Key = keyValue,
-                Status = KeyStatus.Available,
-                GameId = gameId
-            });
+            var key = $"{prefix}-{GenerateRandomSegment(6)}";
+            generated.Add(key);
         }
+
+        // Check DB 1 lần duy nhất
+        var existingKeys = await context.GameKeys
+            .Where(k => generated.Contains(k.Key))
+            .Select(k => k.Key)
+            .ToHashSetAsync();
+
+        // Nếu có trùng → sinh bù (max 5 vòng)
+        int attempts = 0;
+        while (existingKeys.Count > 0 && attempts < 5)
+        {
+            foreach (var dup in existingKeys)
+            {
+                generated.Remove(dup);
+            }
+
+            while (generated.Count < count)
+            {
+                var key = $"{prefix}-{GenerateRandomSegment(6)}";
+                if (!existingKeys.Contains(key))
+                {
+                    generated.Add(key);
+                }
+            }
+
+            existingKeys = await context.GameKeys
+                .Where(k => generated.Contains(k.Key))
+                .Select(k => k.Key)
+                .ToHashSetAsync();
+            attempts++;
+        }
+
+        if (generated.Count < count)
+        {
+            return Result<IReadOnlyList<GameKeyDto>>.Failure(
+                "Không sinh đủ key duy nhất. Vui lòng thử lại.");
+        }
+
+        var newKeys = generated.Select(k => new GameKey
+        {
+            Key = k,
+            Status = KeyStatus.Available,
+            GameId = gameId
+        }).ToList();
 
         context.GameKeys.AddRange(newKeys);
         await context.SaveChangesAsync();
