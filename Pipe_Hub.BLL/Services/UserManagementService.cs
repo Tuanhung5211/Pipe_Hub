@@ -170,12 +170,14 @@ public class UserManagementService : IUserManagementService
             return Result<UserDto>.Failure("Email không được để trống.");
         }
 
-        if (email.Length > 100)
+        var cleanEmail = email.Trim();
+
+        if (cleanEmail.Length > 100)
         {
             return Result<UserDto>.Failure("Email tối đa 100 ký tự.");
         }
 
-        if (!MailAddress.TryCreate(email, out _))
+        if (!MailAddress.TryCreate(cleanEmail, out _))
         {
             return Result<UserDto>.Failure("Email không đúng định dạng.");
         }
@@ -201,8 +203,17 @@ public class UserManagementService : IUserManagementService
             throw new AppException($"Không tìm thấy người dùng với Id = {userId}.");
         }
 
+        // Chặn Admin tự tước quyền / tự khoá chính mình qua form sửa.
+        if (userId == _currentUser.UserId)
+        {
+            if (user.RoleId != roleId || user.IsActive != isActive)
+            {
+                return Result<UserDto>.Failure("Không thể tự thay đổi quyền hoặc trạng thái hoạt động của chính mình.");
+            }
+        }
+
         var emailTaken = await context.Users
-            .AnyAsync(u => u.Email == email && u.Id != userId);
+            .AnyAsync(u => u.Email == cleanEmail && u.Id != userId);
 
         if (emailTaken)
         {
@@ -216,11 +227,22 @@ public class UserManagementService : IUserManagementService
             return Result<UserDto>.Failure("Vai trò không tồn tại.");
         }
 
-        user.Email = email.Trim();
+        user.Email = cleanEmail;
         user.FullName = fullName.Trim();
         user.RoleId = roleId;
         user.IsActive = isActive;
         user.UpdatedAt = DateTime.UtcNow;
+
+        // Đổi sang Player mà chưa có ví → tạo Wallet (Balance = 0).
+        // Dùng lại biến 'role' đã load ở trên (chính là Role mới).
+        if (string.Equals(role.Name, "Player", StringComparison.OrdinalIgnoreCase))
+        {
+            var hasWallet = await context.Wallets.AnyAsync(w => w.UserId == userId);
+            if (!hasWallet)
+            {
+                context.Wallets.Add(new Wallet { UserId = userId, Balance = 0 });
+            }
+        }
 
         await context.SaveChangesAsync();
 
@@ -264,6 +286,18 @@ public class UserManagementService : IUserManagementService
 
         user.RoleId = roleId;
         user.UpdatedAt = DateTime.UtcNow;
+
+        // Đổi sang Player mà chưa có ví → tạo Wallet (Balance = 0).
+        var newRole = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (string.Equals(newRole?.Name, "Player", StringComparison.OrdinalIgnoreCase))
+        {
+            var hasWallet = await context.Wallets.AnyAsync(w => w.UserId == userId);
+            if (!hasWallet)
+            {
+                context.Wallets.Add(new Wallet { UserId = userId, Balance = 0 });
+            }
+        }
+
         await context.SaveChangesAsync();
 
         _ = _logService.WriteAsync(
