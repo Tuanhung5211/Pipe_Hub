@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pipe_Hub.BLL.Security;
+using Pipe_Hub.UI.Forms.Admin;
 using Pipe_Hub.UI.Forms.Auth;
 using Pipe_Hub.UI.Forms.Player;
 
@@ -117,10 +118,23 @@ public class MainForm : Form
     private void BuildAdminMenu()
     {
         var menuAdmin = new ToolStripMenuItem("Quản trị");
-        AddPlaceholderItem(menuAdmin, "Quản lý người dùng", "D8");
-        AddPlaceholderItem(menuAdmin, "Quản lý thể loại", "D8");
-        AddPlaceholderItem(menuAdmin, "Duyệt game", "D8");
-        AddPlaceholderItem(menuAdmin, "Duyệt nạp tiền", "D8");
+
+        var menuUser = new ToolStripMenuItem("Quản lý người dùng");
+        menuUser.Click += (s, e) => OpenMdiChild<UserManagementForm>();
+        menuAdmin.DropDownItems.Add(menuUser);
+
+        var menuCategory = new ToolStripMenuItem("Quản lý thể loại");
+        menuCategory.Click += (s, e) => OpenMdiChild<CategoryForm>();
+        menuAdmin.DropDownItems.Add(menuCategory);
+
+        var menuApproveGame = new ToolStripMenuItem("Duyệt game");
+        menuApproveGame.Click += (s, e) => OpenMdiChild<ApprovalForm>();
+        menuAdmin.DropDownItems.Add(menuApproveGame);
+
+        var menuApproveTopUp = new ToolStripMenuItem("Duyệt nạp tiền");
+        menuApproveTopUp.Click += (s, e) => OpenMdiChild<TopUpApprovalForm>();
+        menuAdmin.DropDownItems.Add(menuApproveTopUp);
+
         AddPlaceholderItem(menuAdmin, "Xem log hệ thống", "D9");
         AddPlaceholderItem(menuAdmin, "Cấu hình hệ thống", "D9");
         _menuStrip.Items.Add(menuAdmin);

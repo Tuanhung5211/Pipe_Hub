@@ -40,6 +40,10 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ILibraryService, LibraryService>();
         services.AddTransient<IUserService, UserService>();
 
+        // ===== Services nhóm Admin (Transient) =====
+        services.AddTransient<IUserManagementService, UserManagementService>();
+        services.AddTransient<ICategoryService, CategoryService>();
+
         return services;
     }
 }
