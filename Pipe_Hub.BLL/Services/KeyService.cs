@@ -147,6 +147,12 @@ public class KeyService : IKeyService
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");
         }
 
+        // Chặn Player
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Admin hoặc Publisher mới có quyền xem danh sách key.");
+        }
+        // Chặn Publisher xem key game người khác
         if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
         {
             throw new AppException("Bạn không có quyền xem key của game này.");
@@ -174,10 +180,18 @@ public class KeyService : IKeyService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var key = await context.GameKeys.FirstOrDefaultAsync(k => k.Id == keyId);
+        var key = await context.GameKeys
+            .Include(k => k.Order)
+            .FirstOrDefaultAsync(k => k.Id == keyId);
         if (key is null)
         {
             throw new AppException($"Không tìm thấy key với Id = {keyId}.");
+        }
+
+        // Player chỉ xem QR của key thuộc đơn hàng của mình
+        if (_currentUser.IsPlayer && key.Order?.UserId != _currentUser.UserId)
+        {
+            throw new AppException("Không có quyền xem key này");
         }
 
         using var qrGenerator = new QRCodeGenerator();

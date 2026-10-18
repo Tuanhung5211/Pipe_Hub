@@ -174,10 +174,15 @@ public class GameService : IGameService
             return Result<GameDto>.Failure("Game đã bị xóa.");
         }
 
-        // Publisher chỉ sửa game của mình
+        // Chặn Player
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Admin hoặc Publisher mới có quyền thao tác.");
+        }
+        // Chặn Publisher sửa game người khác
         if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
         {
-            throw new AppException("Bạn không có quyền sửa game của nhà phát hành khác.");
+            throw new AppException("Bạn không có quyền thao tác trên game này.");
         }
 
         game.Title = title.Trim();
@@ -207,9 +212,15 @@ public class GameService : IGameService
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");
         }
 
+        // Chặn Player
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Admin hoặc Publisher mới có quyền thao tác.");
+        }
+        // Chặn Publisher sửa game người khác
         if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
         {
-            throw new AppException("Bạn không có quyền gửi duyệt game này.");
+            throw new AppException("Bạn không có quyền thao tác trên game này.");
         }
 
         if (game.Status != GameStatus.Draft && game.Status != GameStatus.Rejected)
@@ -309,9 +320,15 @@ public class GameService : IGameService
             throw new AppException($"Không tìm thấy game với Id = {gameId}.");
         }
 
+        // Chặn Player
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Admin hoặc Publisher mới có quyền thao tác.");
+        }
+        // Chặn Publisher sửa game người khác
         if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
         {
-            throw new AppException("Bạn không có quyền xóa game này.");
+            throw new AppException("Bạn không có quyền thao tác trên game này.");
         }
 
         if (game.IsDeleted)

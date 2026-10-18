@@ -110,18 +110,7 @@ public class OrderService : IOrderService
                     $"Số dư ví không đủ. Cần {totalAmount:N0}, hiện có {wallet.Balance:N0}.");
             }
 
-            // 5. Lấy 1 key Available
-            var key = await uow.GameKeys.GetAvailableKeyForGameAsync(gameId);
-            if (key is null)
-            {
-                return Result<OrderDto>.Failure("Game đã hết key khả dụng. Vui lòng liên hệ nhà phát hành.");
-            }
-
-            // 6. Trừ Balance
-            wallet.Balance -= totalAmount;
-            wallet.UpdatedAt = now;
-
-            // 7. Tạo Order
+            // 5. Tạo Order (trước khi lấy key để có order.Id cho update atomic)
             var orderCode = $"ORD-{now:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}";
             var order = new Order
             {
@@ -134,10 +123,30 @@ public class OrderService : IOrderService
             context.Orders.Add(order);
             await context.SaveChangesAsync();  // Để có order.Id
 
-            // 8. Gán key
-            key.Status = KeyStatus.Activated;
-            key.OrderId = order.Id;
-            key.ActivatedAt = now;
+            // 6. Lấy 1 key Available + gán key atomic (chống 2 người mua cùng lúc)
+            var availableKeyQuery = context.GameKeys
+                .AsNoTracking()
+                .Where(k => k.GameId == gameId && k.Status == KeyStatus.Available);
+
+            var key = await availableKeyQuery.FirstOrDefaultAsync();
+            if (key is null) return Result<OrderDto>.Failure("Game đã hết key.");
+
+            // Cập nhật atomic
+            var rowsAffected = await context.GameKeys
+                .Where(k => k.Id == key.Id && k.Status == KeyStatus.Available)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(k => k.Status, KeyStatus.Activated)
+                    .SetProperty(k => k.OrderId, order.Id)
+                    .SetProperty(k => k.ActivatedAt, now));
+
+            if (rowsAffected == 0)
+            {
+                return Result<OrderDto>.Failure("Giao dịch xung đột, vui lòng thử lại.");
+            }
+
+            // 7. Trừ Balance
+            wallet.Balance -= totalAmount;
+            wallet.UpdatedAt = now;
 
             // 9. Tạo OrderItem
             var orderItem = new OrderItem

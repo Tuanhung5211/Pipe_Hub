@@ -170,12 +170,14 @@ public class CategoryForm : Form
         });
         _gridGenre.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "colGenreName",
             HeaderText = "Tên thể loại",
             DataPropertyName = "Name",
             FillWeight = 40
         });
         _gridGenre.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "colGenreDescription",
             HeaderText = "Mô tả",
             DataPropertyName = "Description",
             FillWeight = 60
@@ -338,6 +340,7 @@ public class CategoryForm : Form
         });
         _gridTag.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "colTagName",
             HeaderText = "Tên thẻ",
             DataPropertyName = "Name",
             FillWeight = 100
@@ -504,12 +507,14 @@ public class CategoryForm : Form
         });
         _gridLanguage.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "colLanguageName",
             HeaderText = "Tên ngôn ngữ",
             DataPropertyName = "Name",
             FillWeight = 60
         });
         _gridLanguage.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "colLanguageCode",
             HeaderText = "Mã",
             DataPropertyName = "Code",
             FillWeight = 40
