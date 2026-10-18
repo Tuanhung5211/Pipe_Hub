@@ -44,6 +44,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IUserManagementService, UserManagementService>();
         services.AddTransient<ICategoryService, CategoryService>();
 
+        // ===== Services nhóm Publisher (Transient) =====
+        services.AddTransient<IBuildService, BuildService>();
+
         return services;
     }
 }

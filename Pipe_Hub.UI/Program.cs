@@ -73,6 +73,8 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Admin.CategoryForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Admin.ApprovalForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Admin.TopUpApprovalForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Publisher.GameManagementForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Publisher.BuildForm>();
                 })
                 .Build();
 

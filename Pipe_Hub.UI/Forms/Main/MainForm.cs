@@ -3,6 +3,7 @@ using Pipe_Hub.BLL.Security;
 using Pipe_Hub.UI.Forms.Admin;
 using Pipe_Hub.UI.Forms.Auth;
 using Pipe_Hub.UI.Forms.Player;
+using Pipe_Hub.UI.Forms.Publisher;
 
 namespace Pipe_Hub.UI.Forms.Main;
 
@@ -148,8 +149,15 @@ public class MainForm : Form
     private void BuildPublisherMenu()
     {
         var menuPublisher = new ToolStripMenuItem("Nhà phát hành");
-        AddPlaceholderItem(menuPublisher, "Quản lý game", "D9");
-        AddPlaceholderItem(menuPublisher, "Bản phát hành", "D10");
+
+        var menuGameManage = new ToolStripMenuItem("Quản lý game");
+        menuGameManage.Click += (s, e) => OpenMdiChild<GameManagementForm>();
+        menuPublisher.DropDownItems.Add(menuGameManage);
+
+        var menuBuild = new ToolStripMenuItem("Bản phát hành (Build)");
+        menuBuild.Click += (s, e) => OpenMdiChild<BuildForm>();
+        menuPublisher.DropDownItems.Add(menuBuild);
+
         AddPlaceholderItem(menuPublisher, "Định giá", "D10");
         AddPlaceholderItem(menuPublisher, "Sinh key", "D11");
         AddPlaceholderItem(menuPublisher, "Trang game", "D10");
