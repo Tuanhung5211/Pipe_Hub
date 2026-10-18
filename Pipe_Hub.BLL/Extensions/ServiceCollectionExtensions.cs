@@ -36,6 +36,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<IKeyService, KeyService>();
         services.AddTransient<IReviewService, ReviewService>();
+        services.AddTransient<IWishlistService, WishlistService>();
+        services.AddTransient<ILibraryService, LibraryService>();
+        services.AddTransient<IUserService, UserService>();
 
         return services;
     }

@@ -234,7 +234,7 @@ public class ReviewPanel : UserControl
     {
         if (_reviewService is null) return;
 
-        var dialog = BuildReviewDialog();
+        using var dialog = BuildReviewDialog();
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
         var rating = (int)dialog.Controls["numRating"]!.Tag!;

@@ -161,7 +161,12 @@ public class MainForm : Form
         menuStore.Click += (s, e) => OpenMdiChild<StoreForm>();
         menuPlayer.DropDownItems.Add(menuStore);
 
-        AddPlaceholderItem(menuPlayer, "Thư viện game", "D7");
+        var menuLibrary = new ToolStripMenuItem("Thư viện game")
+        {
+            ShortcutKeys = Keys.Control | Keys.L
+        };
+        menuLibrary.Click += (s, e) => OpenMdiChild<LibraryForm>();
+        menuPlayer.DropDownItems.Add(menuLibrary);
 
         var menuWallet = new ToolStripMenuItem("Ví của tôi")
         {
@@ -170,8 +175,14 @@ public class MainForm : Form
         menuWallet.Click += (s, e) => OpenMdiChild<WalletForm>();
         menuPlayer.DropDownItems.Add(menuWallet);
 
-        AddPlaceholderItem(menuPlayer, "Lịch sử đơn hàng", "D7");
-        AddPlaceholderItem(menuPlayer, "Hồ sơ cá nhân", "D7");
+        var menuOrders = new ToolStripMenuItem("Lịch sử đơn hàng");
+        menuOrders.Click += (s, e) => OpenMdiChild<OrderHistoryForm>();
+        menuPlayer.DropDownItems.Add(menuOrders);
+
+        var menuProfile = new ToolStripMenuItem("Hồ sơ cá nhân");
+        menuProfile.Click += (s, e) => OpenMdiChild<ProfileForm>();
+        menuPlayer.DropDownItems.Add(menuProfile);
+
         AddPlaceholderItem(menuPlayer, "Bản đồ cộng đồng", "D21");
         _menuStrip.Items.Add(menuPlayer);
 
