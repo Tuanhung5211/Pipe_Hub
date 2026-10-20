@@ -49,6 +49,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ICsvKeyImporter, CsvKeyImporter>();
         services.AddTransient<ICsvKeyExporter, CsvKeyExporter>();
 
+        // ===== Services nhóm Reporting (Transient) =====
+        services.AddTransient<IReportService, ReportService>();
+
         return services;
     }
 }
