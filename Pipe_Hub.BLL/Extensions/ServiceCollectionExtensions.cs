@@ -46,6 +46,8 @@ public static class ServiceCollectionExtensions
 
         // ===== Services nhóm Publisher (Transient) =====
         services.AddTransient<IBuildService, BuildService>();
+        services.AddTransient<ICsvKeyImporter, CsvKeyImporter>();
+        services.AddTransient<ICsvKeyExporter, CsvKeyExporter>();
 
         return services;
     }

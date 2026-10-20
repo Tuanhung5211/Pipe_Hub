@@ -159,7 +159,9 @@ public class MainForm : Form
         menuPublisher.DropDownItems.Add(menuBuild);
 
         AddPlaceholderItem(menuPublisher, "Định giá", "D10");
-        AddPlaceholderItem(menuPublisher, "Sinh key", "D11");
+        var menuKeyGen = new ToolStripMenuItem("Sinh key");
+        menuKeyGen.Click += (s, e) => OpenMdiChild<KeyGeneratorForm>();
+        menuPublisher.DropDownItems.Add(menuKeyGen);
         AddPlaceholderItem(menuPublisher, "Trang game", "D10");
         AddPlaceholderItem(menuPublisher, "Thành tích", "D11");
         AddPlaceholderItem(menuPublisher, "Thanh toán Marketing", "D16");
