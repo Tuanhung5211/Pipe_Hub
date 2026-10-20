@@ -12,6 +12,11 @@ namespace Pipe_Hub.BLL.Services;
 
 public class GameService : IGameService
 {
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif"
+    };
+
     private readonly IDbContextFactory<PipeHubDbContext> _contextFactory;
     private readonly CurrentUserContext _currentUser;
     private readonly ILogService _logService;
@@ -200,6 +205,150 @@ public class GameService : IGameService
             entityId: game.Id);
 
         return Result<GameDto>.Success(game.ToDto());
+    }
+
+    public async Task<Result> UpdatePricingAsync(int gameId, decimal price, decimal? salePrice, DateTime? saleStart, DateTime? saleEnd)
+    {
+        if (!_currentUser.UserId.HasValue)
+        {
+            throw new AppException("Bạn chưa đăng nhập.");
+        }
+
+        // Chặn Player
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Admin hoặc Publisher mới có quyền thao tác.");
+        }
+
+        if (price < 0)
+        {
+            return Result.Failure("Giá không được âm.");
+        }
+
+        if (salePrice.HasValue && (salePrice.Value <= 0 || salePrice.Value >= price))
+        {
+            return Result.Failure("Giá sale phải lớn hơn 0 và nhỏ hơn giá gốc.");
+        }
+
+        // Sale phải có đủ cả thời gian bắt đầu và kết thúc
+        if (saleStart.HasValue != saleEnd.HasValue)
+        {
+            return Result.Failure("Vui lòng nhập đầy đủ thời gian bắt đầu và kết thúc sale.");
+        }
+
+        if (saleStart.HasValue && saleEnd.HasValue && saleStart.Value >= saleEnd.Value)
+        {
+            return Result.Failure("Thời gian bắt đầu sale phải trước thời gian kết thúc.");
+        }
+
+        // Không có giá sale thì thời gian sale cũng phải trống
+        if (!salePrice.HasValue)
+        {
+            saleStart = null;
+            saleEnd = null;
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        if (game is null)
+        {
+            throw new AppException($"Không tìm thấy game với Id = {gameId}.");
+        }
+
+        if (game.IsDeleted)
+        {
+            return Result.Failure("Game đã bị xóa.");
+        }
+
+        // Chặn Publisher sửa game người khác
+        if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
+        {
+            throw new AppException("Bạn không có quyền thao tác trên game này.");
+        }
+
+        game.Price = price;
+        game.SalePrice = salePrice;
+        game.SaleStartAt = saleStart;
+        game.SaleEndAt = saleEnd;
+        game.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        _ = _logService.WriteAsync(
+            action: "UpdatePricing",
+            details: $"Cập nhật giá game '{game.Title}' (Id={game.Id}): giá {price:N0}, sale {salePrice?.ToString("N0") ?? "không"}",
+            userId: _currentUser.UserId,
+            entityName: nameof(Game),
+            entityId: game.Id);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> UpdateStorePageAsync(int gameId, string? description, string? coverImagePath)
+    {
+        if (!_currentUser.UserId.HasValue)
+        {
+            throw new AppException("Bạn chưa đăng nhập.");
+        }
+
+        // Chặn Player
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Admin hoặc Publisher mới có quyền thao tác.");
+        }
+
+        // Chuỗi rỗng coi như xóa ảnh bìa
+        var normalizedCover = string.IsNullOrWhiteSpace(coverImagePath)
+            ? null
+            : coverImagePath.Trim();
+
+        if (normalizedCover is not null)
+        {
+            if (!File.Exists(normalizedCover))
+            {
+                return Result.Failure("File ảnh không tồn tại.");
+            }
+
+            if (!AllowedImageExtensions.Contains(Path.GetExtension(normalizedCover)))
+            {
+                return Result.Failure("Chỉ hỗ trợ ảnh JPG/PNG/BMP/GIF.");
+            }
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var game = await context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        if (game is null)
+        {
+            throw new AppException($"Không tìm thấy game với Id = {gameId}.");
+        }
+
+        if (game.IsDeleted)
+        {
+            return Result.Failure("Game đã bị xóa.");
+        }
+
+        // Chặn Publisher sửa game người khác
+        if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
+        {
+            throw new AppException("Bạn không có quyền thao tác trên game này.");
+        }
+
+        game.Description = description?.Trim();
+        game.CoverImagePath = normalizedCover;
+        game.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        _ = _logService.WriteAsync(
+            action: "UpdateStorePage",
+            details: $"Cập nhật trang game '{game.Title}' (Id={game.Id})",
+            userId: _currentUser.UserId,
+            entityName: nameof(Game),
+            entityId: game.Id);
+
+        return Result.Success();
     }
 
     public async Task<Result> SubmitForApprovalAsync(int gameId)

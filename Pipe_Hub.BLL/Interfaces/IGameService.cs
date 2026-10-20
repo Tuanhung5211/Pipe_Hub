@@ -31,6 +31,16 @@ public interface IGameService
     Task<Result<GameDto>> UpdateAsync(int gameId, string title, decimal price, string? description);
 
     /// <summary>
+    /// Cập nhật giá bán và giá sale theo thời gian. Admin hoặc Publisher chủ sở hữu.
+    /// </summary>
+    Task<Result> UpdatePricingAsync(int gameId, decimal price, decimal? salePrice, DateTime? saleStart, DateTime? saleEnd);
+
+    /// <summary>
+    /// Cập nhật trang game (mô tả dài + ảnh bìa). Admin hoặc Publisher chủ sở hữu.
+    /// </summary>
+    Task<Result> UpdateStorePageAsync(int gameId, string? description, string? coverImagePath);
+
+    /// <summary>
     /// Gửi duyệt game (Draft → Pending).
     /// </summary>
     Task<Result> SubmitForApprovalAsync(int gameId);

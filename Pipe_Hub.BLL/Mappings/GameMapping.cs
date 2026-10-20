@@ -22,6 +22,7 @@ public static class GameMapping
             PublisherId = game.PublisherId,
             PublisherName = game.Publisher?.FullName ?? string.Empty,
             CreatedAt = game.CreatedAt,
+            UpdatedAt = game.UpdatedAt,
             GenreNames = game.Genres?.Select(g => g.Name).ToList() ?? new List<string>(),
             TagNames = game.Tags?.Select(t => t.Name).ToList() ?? new List<string>(),
             LanguageNames = game.Languages?.Select(l => l.Name).ToList() ?? new List<string>()

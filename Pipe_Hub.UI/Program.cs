@@ -76,6 +76,8 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.GameManagementForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.BuildForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.KeyGeneratorForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Publisher.PricingForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Publisher.StorePageForm>();
                 })
                 .Build();
 

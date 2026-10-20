@@ -158,11 +158,17 @@ public class MainForm : Form
         menuBuild.Click += (s, e) => OpenMdiChild<BuildForm>();
         menuPublisher.DropDownItems.Add(menuBuild);
 
-        AddPlaceholderItem(menuPublisher, "Định giá", "D10");
+        var menuPricing = new ToolStripMenuItem("Cấu hình giá");
+        menuPricing.Click += (s, e) => OpenMdiChild<PricingForm>();
+        menuPublisher.DropDownItems.Add(menuPricing);
+
         var menuKeyGen = new ToolStripMenuItem("Sinh key");
         menuKeyGen.Click += (s, e) => OpenMdiChild<KeyGeneratorForm>();
         menuPublisher.DropDownItems.Add(menuKeyGen);
-        AddPlaceholderItem(menuPublisher, "Trang game", "D10");
+
+        var menuStorePage = new ToolStripMenuItem("Trang game");
+        menuStorePage.Click += (s, e) => OpenMdiChild<StorePageForm>();
+        menuPublisher.DropDownItems.Add(menuStorePage);
         AddPlaceholderItem(menuPublisher, "Thành tích", "D11");
         AddPlaceholderItem(menuPublisher, "Thanh toán Marketing", "D16");
         AddPlaceholderItem(menuPublisher, "Bản đồ người chơi", "D21");

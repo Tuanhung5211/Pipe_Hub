@@ -15,6 +15,7 @@ public record GameDto
     public int PublisherId { get; init; }
     public string PublisherName { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
     public IReadOnlyList<string> GenreNames { get; init; } = new List<string>();
     public IReadOnlyList<string> TagNames { get; init; } = new List<string>();
     public IReadOnlyList<string> LanguageNames { get; init; } = new List<string>();
