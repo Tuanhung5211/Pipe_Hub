@@ -184,7 +184,9 @@ public class MainForm : Form
         var menuAchievement = new ToolStripMenuItem("Thành tích");
         menuAchievement.Click += (s, e) => OpenMdiChild<AchievementForm>();
         menuPublisher.DropDownItems.Add(menuAchievement);
-        AddPlaceholderItem(menuPublisher, "Thanh toán Marketing", "D16");
+        var menuMarketing = new ToolStripMenuItem("Thanh toán Marketing");
+        menuMarketing.Click += (s, e) => OpenMdiChild<MarketingPaymentForm>();
+        menuPublisher.DropDownItems.Add(menuMarketing);
         AddPlaceholderItem(menuPublisher, "Bản đồ người chơi", "D21");
         _menuStrip.Items.Add(menuPublisher);
 
