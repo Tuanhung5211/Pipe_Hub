@@ -68,6 +68,7 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Player.LibraryForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Player.OrderHistoryForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Player.ProfileForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Player.PlayerAchievementForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Admin.UserManagementForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Admin.UserEditForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Admin.CategoryForm>();

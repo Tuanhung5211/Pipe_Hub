@@ -16,4 +16,7 @@ public interface IAchievementService
     Task<Result> UpdateAsync(int id, string name, string? description, string? iconPath);
 
     Task<Result> DeleteAsync(int id);
+
+    /// <summary>Lấy danh sách thành tích user hiện tại đã đạt được.</summary>
+    Task<IReadOnlyList<PlayerAchievementDto>> GetMyAchievementsAsync();
 }

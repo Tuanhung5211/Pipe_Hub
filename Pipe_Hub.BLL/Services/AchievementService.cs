@@ -44,6 +44,35 @@ public class AchievementService : IAchievementService
         return achievements.Select(ToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<PlayerAchievementDto>> GetMyAchievementsAsync()
+    {
+        if (!_currentUser.UserId.HasValue)
+        {
+            throw new AppException("Bạn chưa đăng nhập.");
+        }
+
+        var userId = _currentUser.UserId.Value;
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var userAch = await context.UserAchievements
+            .AsNoTracking()
+            .Include(ua => ua.Achievement)
+            .ThenInclude(a => a.Game)
+            .Where(ua => ua.UserId == userId)
+            .OrderByDescending(ua => ua.UnlockedAt)
+            .ToListAsync();
+
+        return userAch.Select(ua => new PlayerAchievementDto
+        {
+            AchievementId = ua.AchievementId,
+            Name = ua.Achievement.Name,
+            Description = ua.Achievement.Description,
+            GameTitle = ua.Achievement.Game?.Title ?? string.Empty,
+            UnlockedAt = ua.UnlockedAt
+        }).ToList();
+    }
+
     public async Task<Result<AchievementDto>> CreateAsync(
         int gameId,
         string name,

@@ -233,6 +233,10 @@ public class MainForm : Form
         menuProfile.Click += (s, e) => OpenMdiChild<ProfileForm>();
         menuPlayer.DropDownItems.Add(menuProfile);
 
+        var menuAchievements = new ToolStripMenuItem("Thành tích của tôi");
+        menuAchievements.Click += (s, e) => OpenMdiChild<PlayerAchievementForm>();
+        menuPlayer.DropDownItems.Add(menuAchievements);
+
         AddPlaceholderItem(menuPlayer, "Bản đồ cộng đồng", "D21");
         _menuStrip.Items.Add(menuPlayer);
 
