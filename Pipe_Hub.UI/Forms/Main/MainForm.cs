@@ -4,6 +4,7 @@ using Pipe_Hub.UI.Forms.Admin;
 using Pipe_Hub.UI.Forms.Auth;
 using Pipe_Hub.UI.Forms.Player;
 using Pipe_Hub.UI.Forms.Publisher;
+using Pipe_Hub.UI.Forms.Shared;
 
 namespace Pipe_Hub.UI.Forms.Main;
 
@@ -141,7 +142,9 @@ public class MainForm : Form
         _menuStrip.Items.Add(menuAdmin);
 
         var menuShared = new ToolStripMenuItem("Báo cáo");
-        AddPlaceholderItem(menuShared, "Dashboard", "D12");
+        var menuDashboard = new ToolStripMenuItem("Dashboard");
+        menuDashboard.Click += (s, e) => OpenMdiChild<DashboardForm>();
+        menuShared.DropDownItems.Add(menuDashboard);
         AddPlaceholderItem(menuShared, "Báo cáo doanh thu", "D13");
         _menuStrip.Items.Add(menuShared);
     }
@@ -175,7 +178,9 @@ public class MainForm : Form
         _menuStrip.Items.Add(menuPublisher);
 
         var menuShared = new ToolStripMenuItem("Báo cáo");
-        AddPlaceholderItem(menuShared, "Dashboard", "D12");
+        var menuDashboard = new ToolStripMenuItem("Dashboard");
+        menuDashboard.Click += (s, e) => OpenMdiChild<DashboardForm>();
+        menuShared.DropDownItems.Add(menuDashboard);
         AddPlaceholderItem(menuShared, "Báo cáo doanh thu", "D13");
         _menuStrip.Items.Add(menuShared);
     }
