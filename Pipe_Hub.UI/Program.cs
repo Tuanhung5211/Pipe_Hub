@@ -78,6 +78,10 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.KeyGeneratorForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.PricingForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.StorePageForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Admin.LogViewerForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Admin.SystemConfigForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Publisher.PublisherReportForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Publisher.AchievementForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Shared.DashboardForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Shared.ReportForm>();
                 })

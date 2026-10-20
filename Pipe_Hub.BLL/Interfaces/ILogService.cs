@@ -24,4 +24,8 @@ public interface ILogService
     /// Lấy log của 1 user.
     /// </summary>
     Task<List<LogEntryDto>> GetByUserAsync(int userId, int count = 50);
+
+    /// <summary>Lấy log theo bộ lọc (ngày, hành động, user).</summary>
+    Task<IReadOnlyList<LogEntryDto>> GetLogsByFilterAsync(
+        DateTime? fromDate, DateTime? toDate, string? action, int? userId);
 }

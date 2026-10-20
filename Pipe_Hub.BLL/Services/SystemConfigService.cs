@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.DAL.Data;
 using Pipe_Hub.DAL.Entities;
@@ -89,6 +90,24 @@ public class SystemConfigService : ISystemConfigService
 
         await context.SaveChangesAsync();
         InvalidateCache();
+    }
+
+    public async Task<IReadOnlyList<SystemConfigDto>> GetAllAsync()
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var items = await context.SystemConfigs
+            .OrderBy(sc => sc.Key)
+            .ToListAsync();
+
+        return items.Select(sc => new SystemConfigDto
+        {
+            Id = sc.Id,
+            Key = sc.Key,
+            Value = sc.Value,
+            Description = sc.Description,
+            UpdatedAt = sc.UpdatedAt
+        }).ToList();
     }
 
     public void InvalidateCache()

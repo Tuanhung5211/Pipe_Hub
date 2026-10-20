@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IBuildService, BuildService>();
         services.AddTransient<ICsvKeyImporter, CsvKeyImporter>();
         services.AddTransient<ICsvKeyExporter, CsvKeyExporter>();
+        services.AddTransient<IAchievementService, AchievementService>();
 
         // ===== Services nhóm Reporting (Transient) =====
         services.AddTransient<IReportService, ReportService>();

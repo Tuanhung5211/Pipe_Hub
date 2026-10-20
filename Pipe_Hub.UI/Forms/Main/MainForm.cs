@@ -137,8 +137,13 @@ public class MainForm : Form
         menuApproveTopUp.Click += (s, e) => OpenMdiChild<TopUpApprovalForm>();
         menuAdmin.DropDownItems.Add(menuApproveTopUp);
 
-        AddPlaceholderItem(menuAdmin, "Xem log hệ thống", "D9");
-        AddPlaceholderItem(menuAdmin, "Cấu hình hệ thống", "D9");
+        var menuLog = new ToolStripMenuItem("Xem log hệ thống");
+        menuLog.Click += (s, e) => OpenMdiChild<LogViewerForm>();
+        menuAdmin.DropDownItems.Add(menuLog);
+
+        var menuConfig = new ToolStripMenuItem("Cấu hình hệ thống");
+        menuConfig.Click += (s, e) => OpenMdiChild<SystemConfigForm>();
+        menuAdmin.DropDownItems.Add(menuConfig);
         _menuStrip.Items.Add(menuAdmin);
 
         var menuShared = new ToolStripMenuItem("Báo cáo");
@@ -176,7 +181,9 @@ public class MainForm : Form
         var menuStorePage = new ToolStripMenuItem("Trang game");
         menuStorePage.Click += (s, e) => OpenMdiChild<StorePageForm>();
         menuPublisher.DropDownItems.Add(menuStorePage);
-        AddPlaceholderItem(menuPublisher, "Thành tích", "D11");
+        var menuAchievement = new ToolStripMenuItem("Thành tích");
+        menuAchievement.Click += (s, e) => OpenMdiChild<AchievementForm>();
+        menuPublisher.DropDownItems.Add(menuAchievement);
         AddPlaceholderItem(menuPublisher, "Thanh toán Marketing", "D16");
         AddPlaceholderItem(menuPublisher, "Bản đồ người chơi", "D21");
         _menuStrip.Items.Add(menuPublisher);
@@ -185,7 +192,9 @@ public class MainForm : Form
         var menuDashboard = new ToolStripMenuItem("Dashboard");
         menuDashboard.Click += (s, e) => OpenMdiChild<DashboardForm>();
         menuShared.DropDownItems.Add(menuDashboard);
-        AddPlaceholderItem(menuShared, "Báo cáo doanh thu", "D13");
+        var menuPublisherReport = new ToolStripMenuItem("Báo cáo doanh thu");
+        menuPublisherReport.Click += (s, e) => OpenMdiChild<PublisherReportForm>();
+        menuShared.DropDownItems.Add(menuPublisherReport);
         _menuStrip.Items.Add(menuShared);
     }
 

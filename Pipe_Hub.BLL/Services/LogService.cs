@@ -76,4 +76,44 @@ public class LogService : ILogService
 
         return entries.Select(e => e.ToDto()).ToList();
     }
+
+    public async Task<IReadOnlyList<LogEntryDto>> GetLogsByFilterAsync(
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? action,
+        int? userId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        IQueryable<LogEntry> query = context.LogEntries
+            .Include(l => l.User)
+            .AsQueryable();
+
+        if (fromDate.HasValue)
+        {
+            query = query.Where(l => l.CreatedAt >= fromDate.Value);
+        }
+
+        if (toDate.HasValue)
+        {
+            query = query.Where(l => l.CreatedAt <= toDate.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(action))
+        {
+            query = query.Where(l => l.Action.Contains(action));
+        }
+
+        if (userId.HasValue)
+        {
+            query = query.Where(l => l.UserId == userId.Value);
+        }
+
+        var entries = await query
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(1000)
+            .ToListAsync();
+
+        return entries.Select(e => e.ToDto()).ToList();
+    }
 }

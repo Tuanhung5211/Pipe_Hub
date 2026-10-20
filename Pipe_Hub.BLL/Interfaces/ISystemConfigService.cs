@@ -1,3 +1,5 @@
+using Pipe_Hub.BLL.DTOs;
+
 namespace Pipe_Hub.BLL.Interfaces;
 
 /// <summary>
@@ -25,6 +27,9 @@ public interface ISystemConfigService
     /// Set value cho key. Nếu key chưa có → tạo mới.
     /// </summary>
     Task SetAsync(string key, string value, string? description = null);
+
+    /// <summary>Lấy toàn bộ config (không qua cache — query DB trực tiếp).</summary>
+    Task<IReadOnlyList<SystemConfigDto>> GetAllAsync();
 
     /// <summary>
     /// Xóa cache — gọi khi cần reload từ DB.

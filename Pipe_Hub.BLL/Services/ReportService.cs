@@ -165,4 +165,54 @@ public class ReportService : IReportService
 
         return orders.Select(o => o.ToDto()).ToList();
     }
+
+    public async Task<IReadOnlyList<PublisherRevenueItemDto>> GetRevenueDetailsForPublisherAsync(RevenueFilterDto filter)
+    {
+        if (!_currentUser.IsPublisher)
+        {
+            throw new AppException("Chỉ Publisher mới được xem báo cáo doanh thu của mình.");
+        }
+
+        var publisherId = _currentUser.UserId
+            ?? throw new AppException("Không tìm thấy Publisher hiện tại.");
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var query = context.OrderItems
+            .AsNoTracking()
+            .Include(oi => oi.Order).ThenInclude(o => o.User)
+            .Include(oi => oi.Game)
+            .Where(oi => oi.Game.PublisherId == publisherId
+                      && oi.Order.Status == OrderStatus.Completed);
+
+        if (filter.FromDate.HasValue)
+            query = query.Where(oi => oi.Order.CreatedAt >= filter.FromDate.Value);
+
+        if (filter.ToDate.HasValue)
+            query = query.Where(oi => oi.Order.CreatedAt <= filter.ToDate.Value);
+
+        if (filter.MinAmount.HasValue)
+            query = query.Where(oi => oi.UnitPrice * oi.Quantity >= filter.MinAmount.Value);
+
+        if (filter.MaxAmount.HasValue)
+            query = query.Where(oi => oi.UnitPrice * oi.Quantity <= filter.MaxAmount.Value);
+
+        var items = await query
+            .OrderByDescending(oi => oi.Order.CreatedAt)
+            .ToListAsync();
+
+        return items.Select(oi => new PublisherRevenueItemDto
+        {
+            OrderId = oi.OrderId,
+            OrderCode = oi.Order.OrderCode,
+            CreatedAt = oi.Order.CreatedAt,
+            GameId = oi.GameId,
+            GameTitle = oi.Game.Title,
+            Quantity = oi.Quantity,
+            UnitPrice = oi.UnitPrice,
+            Subtotal = oi.UnitPrice * oi.Quantity,
+            BuyerUsername = oi.Order.User?.Username ?? string.Empty,
+            Status = oi.Order.Status.ToString()
+        }).ToList();
+    }
 }

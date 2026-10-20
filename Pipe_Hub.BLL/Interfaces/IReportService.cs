@@ -19,4 +19,10 @@ public interface IReportService
 
     /// <summary>Lấy danh sách đơn hàng Completed (đã lọc theo ngày + khoảng giá). Chỉ Admin.</summary>
     Task<IReadOnlyList<OrderDto>> GetRevenueDetailsAsync(RevenueFilterDto filter);
+
+    /// <summary>
+    /// Lấy doanh thu chi tiết của Publisher hiện tại (chỉ OrderItem có Game.PublisherId = current publisher).
+    /// Chỉ Publisher. Filter theo ngày + Subtotal.
+    /// </summary>
+    Task<IReadOnlyList<PublisherRevenueItemDto>> GetRevenueDetailsForPublisherAsync(RevenueFilterDto filter);
 }
