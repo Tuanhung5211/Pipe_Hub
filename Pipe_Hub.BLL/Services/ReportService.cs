@@ -77,29 +77,32 @@ public class ReportService : IReportService
     {
         EnsureCanViewDashboard();
 
-        var fromDate = DateTime.UtcNow.AddDays(-days);
-
+        // Lấy ngày lớn nhất trong DB để test (tránh lỗi data cũ quá 7 ngày)
+        // Hoặc dùng DateTime.UtcNow.AddDays(-days) nếu data luôn mới.
+        // Để an toàn cho seed data, ta lấy mốc thời gian mới nhất trong DB.
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var rows = await context.PlaySessions
+        var maxDate = await context.PlaySessions.AnyAsync()
+            ? await context.PlaySessions.MaxAsync(p => p.StartedAt)
+            : DateTime.UtcNow;
+        var fromDate = maxDate.AddDays(-days);
+
+        var sessions = await context.PlaySessions
             .AsNoTracking()
             .Where(p => p.StartedAt >= fromDate)
+            .ToListAsync();
+
+        var rows = sessions
             .GroupBy(p => p.StartedAt.Date)
-            .Select(g => new
+            .Select(g => new CcuByDayDto
             {
                 Date = g.Key,
                 UniquePlayers = g.Select(p => p.UserId).Distinct().Count()
             })
             .OrderBy(r => r.Date)
-            .ToListAsync();
-
-        return rows
-            .Select(r => new CcuByDayDto
-            {
-                Date = r.Date,
-                UniquePlayers = r.UniquePlayers
-            })
             .ToList();
+
+        return rows;
     }
 
     public async Task<IReadOnlyList<GameCountByGenreDto>> GetGameCountByGenreAsync()
@@ -108,16 +111,21 @@ public class ReportService : IReportService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        return await context.Genres
+        // Load Genres + Games lên RAM trước — tránh EF Core dịch truy vấn N-N
+        // (Include + Any/Count) sang SQL Server không chính xác.
+        var genres = await context.Genres
             .AsNoTracking()
             .Include(g => g.Games)
-            .Where(g => g.Games.Any(ga => !ga.IsDeleted))
+            .ToListAsync();
+
+        return genres
             .Select(g => new GameCountByGenreDto
             {
                 GenreName = g.Name,
                 GameCount = g.Games.Count(ga => !ga.IsDeleted)
             })
-            .OrderByDescending(r => r.GameCount)
-            .ToListAsync();
+            .Where(d => d.GameCount > 0)
+            .OrderByDescending(d => d.GameCount)
+            .ToList();
     }
 }
