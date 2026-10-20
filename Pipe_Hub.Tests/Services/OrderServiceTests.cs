@@ -17,6 +17,7 @@ public class OrderServiceTests : IAsyncLifetime
     private IDbContextFactory<PipeHubDbContext> _factory = null!;
     private CurrentUserContext _currentUser = null!;
     private ILogService _logService = null!;
+    private IEmailService _emailService = null!;
 
     private int _userId;
     private int _gameId;
@@ -106,6 +107,7 @@ public class OrderServiceTests : IAsyncLifetime
         _currentUser.SetUser(_userId, "testplayer", "Test Player", "Player");
 
         _logService = Substitute.For<ILogService>();
+        _emailService = Substitute.For<IEmailService>();
     }
 
     public async Task DisposeAsync()
@@ -127,7 +129,7 @@ public class OrderServiceTests : IAsyncLifetime
             await ctx.SaveChangesAsync();
         }
 
-        var service = new OrderService(_factory, _currentUser, _logService);
+        var service = new OrderService(_factory, _currentUser, _logService, _emailService);
 
         // Act
         var result = await service.PurchaseAsync(_gameId);
@@ -161,7 +163,7 @@ public class OrderServiceTests : IAsyncLifetime
             await ctx.SaveChangesAsync();
         }
 
-        var service = new OrderService(_factory, _currentUser, _logService);
+        var service = new OrderService(_factory, _currentUser, _logService, _emailService);
 
         // Act
         var result = await service.PurchaseAsync(_gameId);
@@ -185,7 +187,7 @@ public class OrderServiceTests : IAsyncLifetime
     public async Task PurchaseAsync_WhenValid_ReturnsSuccess_AndUpdatesData()
     {
         // Arrange
-        var service = new OrderService(_factory, _currentUser, _logService);
+        var service = new OrderService(_factory, _currentUser, _logService, _emailService);
 
         // Act
         var result = await service.PurchaseAsync(_gameId);
@@ -231,7 +233,7 @@ public class OrderServiceTests : IAsyncLifetime
     public async Task PurchaseAsync_WhenCalledTwice_ReturnsFailure()
     {
         // Arrange: mua lần 1
-        var service = new OrderService(_factory, _currentUser, _logService);
+        var service = new OrderService(_factory, _currentUser, _logService, _emailService);
         var firstResult = await service.PurchaseAsync(_gameId);
         Assert.True(firstResult.IsSuccess);
 

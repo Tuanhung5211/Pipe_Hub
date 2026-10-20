@@ -141,6 +141,10 @@ public class MainForm : Form
         menuLog.Click += (s, e) => OpenMdiChild<LogViewerForm>();
         menuAdmin.DropDownItems.Add(menuLog);
 
+        var menuNotification = new ToolStripMenuItem("Lịch sử Email");
+        menuNotification.Click += (s, e) => OpenMdiChild<NotificationForm>();
+        menuAdmin.DropDownItems.Add(menuNotification);
+
         var menuConfig = new ToolStripMenuItem("Cấu hình hệ thống");
         menuConfig.Click += (s, e) => OpenMdiChild<SystemConfigForm>();
         menuAdmin.DropDownItems.Add(menuConfig);

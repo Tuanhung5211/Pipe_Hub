@@ -60,6 +60,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IPaymentGateway, Pipe_Hub.BLL.Payments.VnPaySandboxClient>();
         services.AddTransient<IPaymentService, PaymentService>();
 
+        // ===== Email Service (MailKit — Chương 9) =====
+        services.AddTransient<IEmailService, EmailService>();
+
         // ===== ADO.NET thuần (đối chiếu EF Core — Chương 7) =====
         services.AddTransient<Pipe_Hub.DAL.AdoNet.IRevenueAdoRepository>(
             _ => new Pipe_Hub.DAL.AdoNet.RevenueAdoRepository(connectionString));

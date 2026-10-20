@@ -16,15 +16,18 @@ public class OrderService : IOrderService
     private readonly IDbContextFactory<PipeHubDbContext> _contextFactory;
     private readonly CurrentUserContext _currentUser;
     private readonly ILogService _logService;
+    private readonly IEmailService _emailService;
 
     public OrderService(
         IDbContextFactory<PipeHubDbContext> contextFactory,
         CurrentUserContext currentUser,
-        ILogService logService)
+        ILogService logService,
+        IEmailService emailService)
     {
         _contextFactory = contextFactory;
         _currentUser = currentUser;
         _logService = logService;
+        _emailService = emailService;
     }
 
     public async Task<Result<OrderDto>> PurchaseAsync(int gameId, int quantity = 1)
@@ -171,9 +174,33 @@ public class OrderService : IOrderService
             context.Transactions.Add(txn);
 
             await context.SaveChangesAsync();  // RowVersion auto-check tại đây
+
+            // Lấy email trước khi commit để tránh dùng context đã disposed
+            var userEmail = await context.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Email)
+                .FirstOrDefaultAsync();
+
             await transaction.CommitAsync();
 
-            // 11. Log (fire-and-forget)
+            // 11. Gửi email xác nhận (fire-and-forget — không block luồng chính)
+            if (!string.IsNullOrWhiteSpace(userEmail))
+            {
+                var emailBody = $"""
+                    <h2>Xác nhận mua game thành công</h2>
+                    <p>Mã đơn: <strong>{orderCode}</strong></p>
+                    <p>Tên game: <strong>{game.Title}</strong></p>
+                    <p>Tổng tiền: <strong>{totalAmount:N0} đ</strong></p>
+                    <p>Cảm ơn bạn đã mua game tại Pipe Hub!</p>
+                    """;
+
+                _ = _emailService.SendEmailAsync(
+                    userEmail,
+                    "Xác nhận mua game thành công - Pipe Hub",
+                    emailBody);
+            }
+
+            // 12. Log (fire-and-forget)
             _ = _logService.WriteAsync(
                 action: "PurchaseGame",
                 details: $"User {_currentUser.Username} mua '{game.Title}' - {totalAmount:N0} (đơn {orderCode})",
@@ -181,7 +208,7 @@ public class OrderService : IOrderService
                 entityName: nameof(Order),
                 entityId: order.Id);
 
-            // 12. Load lại để map DTO (cần Items + Keys)
+            // 13. Load lại để map DTO (cần Items + Keys)
             var freshOrder = await context.Orders
                 .Include(o => o.User)
                 .Include(o => o.Items).ThenInclude(i => i.Game)
