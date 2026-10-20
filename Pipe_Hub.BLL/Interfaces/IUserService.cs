@@ -10,4 +10,7 @@ public interface IUserService
 
     /// <summary>Cập nhật profile. Validate email format + unique.</summary>
     Task<Result<UserDto>> UpdateProfileAsync(UpdateProfileDto request);
+
+    /// <summary>Lấy danh sách User có toạ độ hợp lệ (để vẽ bản đồ).</summary>
+    Task<IReadOnlyList<PlayerLocationDto>> GetPlayersWithLocationAsync();
 }

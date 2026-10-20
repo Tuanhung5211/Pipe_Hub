@@ -116,4 +116,27 @@ public class UserService : IUserService
 
         return Result<UserDto>.Success(user.ToDto());
     }
+
+    public async Task<IReadOnlyList<PlayerLocationDto>> GetPlayersWithLocationAsync()
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var users = await context.Users
+            .AsNoTracking()
+            .Where(u => u.IsActive
+                     && u.Latitude.HasValue
+                     && u.Longitude.HasValue)
+            .OrderBy(u => u.Username)
+            .ToListAsync();
+
+        return users.Select(u => new PlayerLocationDto
+        {
+            UserId = u.Id,
+            Username = u.Username,
+            FullName = u.FullName,
+            Country = u.Country,
+            Latitude = u.Latitude!.Value,
+            Longitude = u.Longitude!.Value
+        }).ToList();
+    }
 }

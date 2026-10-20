@@ -187,7 +187,9 @@ public class MainForm : Form
         var menuMarketing = new ToolStripMenuItem("Thanh toán Marketing");
         menuMarketing.Click += (s, e) => OpenMdiChild<MarketingPaymentForm>();
         menuPublisher.DropDownItems.Add(menuMarketing);
-        AddPlaceholderItem(menuPublisher, "Bản đồ người chơi", "D21");
+        var menuPlayerMap = new ToolStripMenuItem("Bản đồ người chơi");
+        menuPlayerMap.Click += (s, e) => OpenMdiChild<MapForm>();
+        menuPublisher.DropDownItems.Add(menuPlayerMap);
         _menuStrip.Items.Add(menuPublisher);
 
         var menuShared = new ToolStripMenuItem("Báo cáo");
@@ -237,7 +239,9 @@ public class MainForm : Form
         menuAchievements.Click += (s, e) => OpenMdiChild<PlayerAchievementForm>();
         menuPlayer.DropDownItems.Add(menuAchievements);
 
-        AddPlaceholderItem(menuPlayer, "Bản đồ cộng đồng", "D21");
+        var menuMap = new ToolStripMenuItem("Bản đồ cộng đồng");
+        menuMap.Click += (s, e) => OpenMdiChild<MapForm>();
+        menuPlayer.DropDownItems.Add(menuMap);
         _menuStrip.Items.Add(menuPlayer);
 
         var menuChat = new ToolStripMenuItem("Trợ giúp");
