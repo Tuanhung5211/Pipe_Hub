@@ -145,7 +145,11 @@ public class MainForm : Form
         var menuDashboard = new ToolStripMenuItem("Dashboard");
         menuDashboard.Click += (s, e) => OpenMdiChild<DashboardForm>();
         menuShared.DropDownItems.Add(menuDashboard);
-        AddPlaceholderItem(menuShared, "Báo cáo doanh thu", "D13");
+
+        var menuRevenue = new ToolStripMenuItem("Báo cáo doanh thu");
+        menuRevenue.Click += (s, e) => OpenMdiChild<ReportForm>();
+        menuShared.DropDownItems.Add(menuRevenue);
+
         _menuStrip.Items.Add(menuShared);
     }
 

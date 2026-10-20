@@ -51,6 +51,12 @@ public static class ServiceCollectionExtensions
 
         // ===== Services nhóm Reporting (Transient) =====
         services.AddTransient<IReportService, ReportService>();
+        services.AddTransient<Pipe_Hub.BLL.Reports.ExcelReportBuilder>();
+        services.AddTransient<Pipe_Hub.BLL.Reports.PdfReportBuilder>();
+
+        // ===== ADO.NET thuần (đối chiếu EF Core — Chương 7) =====
+        services.AddTransient<Pipe_Hub.DAL.AdoNet.IRevenueAdoRepository>(
+            _ => new Pipe_Hub.DAL.AdoNet.RevenueAdoRepository(connectionString));
 
         return services;
     }

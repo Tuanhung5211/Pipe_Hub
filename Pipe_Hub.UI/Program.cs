@@ -79,6 +79,7 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.PricingForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.StorePageForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Shared.DashboardForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Shared.ReportForm>();
                 })
                 .Build();
 

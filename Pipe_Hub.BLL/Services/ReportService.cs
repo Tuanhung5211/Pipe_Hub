@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Pipe_Hub.BLL.Common;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
+using Pipe_Hub.BLL.Mappings;
 using Pipe_Hub.BLL.Security;
 using Pipe_Hub.DAL.Data;
 using Pipe_Hub.DAL.Enums;
@@ -127,5 +128,41 @@ public class ReportService : IReportService
             .Where(d => d.GameCount > 0)
             .OrderByDescending(d => d.GameCount)
             .ToList();
+    }
+
+    public async Task<IReadOnlyList<OrderDto>> GetRevenueDetailsAsync(RevenueFilterDto filter)
+    {
+        // Chỉ Admin — dùng EnsureCanViewDashboard sẽ cho cả Publisher, cần check riêng
+        if (!_currentUser.IsAdmin)
+        {
+            throw new AppException("Chỉ Admin mới được xem báo cáo doanh thu chi tiết.");
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var query = context.Orders
+            .AsNoTracking()
+            .Include(o => o.User)
+            .Include(o => o.Items).ThenInclude(i => i.Game)
+            .Include(o => o.Keys)
+            .Where(o => o.Status == OrderStatus.Completed);
+
+        if (filter.FromDate.HasValue)
+            query = query.Where(o => o.CreatedAt >= filter.FromDate.Value);
+
+        if (filter.ToDate.HasValue)
+            query = query.Where(o => o.CreatedAt <= filter.ToDate.Value);
+
+        if (filter.MinAmount.HasValue)
+            query = query.Where(o => o.TotalAmount >= filter.MinAmount.Value);
+
+        if (filter.MaxAmount.HasValue)
+            query = query.Where(o => o.TotalAmount <= filter.MaxAmount.Value);
+
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        return orders.Select(o => o.ToDto()).ToList();
     }
 }

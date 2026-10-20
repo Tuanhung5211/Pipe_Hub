@@ -16,4 +16,7 @@ public interface IReportService
 
     /// <summary>Số lượng game (chưa xóa) theo thể loại, sắp xếp giảm dần.</summary>
     Task<IReadOnlyList<GameCountByGenreDto>> GetGameCountByGenreAsync();
+
+    /// <summary>Lấy danh sách đơn hàng Completed (đã lọc theo ngày + khoảng giá). Chỉ Admin.</summary>
+    Task<IReadOnlyList<OrderDto>> GetRevenueDetailsAsync(RevenueFilterDto filter);
 }
