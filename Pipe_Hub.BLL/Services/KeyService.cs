@@ -189,7 +189,7 @@ public class KeyService : IKeyService
         }
 
         // Player chỉ xem QR của key thuộc đơn hàng của mình
-        if (_currentUser.IsPlayer && key.Order?.UserId != _currentUser.UserId)
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher && key.Order?.UserId != _currentUser.UserId)
         {
             throw new AppException("Không có quyền xem key này");
         }

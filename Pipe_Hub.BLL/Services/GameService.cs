@@ -195,6 +195,9 @@ public class GameService : IGameService
         game.Price = price;
         game.UpdatedAt = DateTime.UtcNow;
 
+        // Game đã duyệt mà bị sửa → quay về Pending để Admin duyệt lại
+        if (game.Status == GameStatus.Approved) game.Status = GameStatus.Pending;
+
         await context.SaveChangesAsync();
 
         _ = _logService.WriteAsync(
@@ -273,6 +276,9 @@ public class GameService : IGameService
         game.SaleEndAt = saleEnd;
         game.UpdatedAt = DateTime.UtcNow;
 
+        // Game đã duyệt mà bị sửa → quay về Pending để Admin duyệt lại
+        if (game.Status == GameStatus.Approved) game.Status = GameStatus.Pending;
+
         await context.SaveChangesAsync();
 
         _ = _logService.WriteAsync(
@@ -338,6 +344,9 @@ public class GameService : IGameService
         game.Description = description?.Trim();
         game.CoverImagePath = normalizedCover;
         game.UpdatedAt = DateTime.UtcNow;
+
+        // Game đã duyệt mà bị sửa → quay về Pending để Admin duyệt lại
+        if (game.Status == GameStatus.Approved) game.Status = GameStatus.Pending;
 
         await context.SaveChangesAsync();
 

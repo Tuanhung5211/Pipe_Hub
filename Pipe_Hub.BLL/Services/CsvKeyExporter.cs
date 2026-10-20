@@ -68,6 +68,11 @@ public class CsvKeyExporter : ICsvKeyExporter
         {
             query = query.Where(k => k.Status == st);
         }
+        else
+        {
+            // Mặc định chỉ export key chưa bán
+            query = query.Where(k => k.Status == KeyStatus.Available);
+        }
 
         var keys = await query.OrderBy(k => k.Key).ToListAsync(ct);
 

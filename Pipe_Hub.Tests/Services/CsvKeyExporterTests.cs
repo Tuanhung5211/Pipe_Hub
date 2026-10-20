@@ -115,7 +115,7 @@ public class CsvKeyExporterTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExportAsync_WhenHasKeys_WritesAllRows()
+    public async Task ExportAsync_WhenNoStatusFilter_ExportsOnlyAvailable()
     {
         await SeedKeyAsync("EXP-KEY-001", KeyStatus.Available);
         await SeedKeyAsync("EXP-KEY-002", KeyStatus.Available);
@@ -127,12 +127,12 @@ public class CsvKeyExporterTests : IAsyncLifetime
         var result = await service.ExportAsync(_gameId, path);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(3, result.Data);
+        Assert.Equal(2, result.Data);
 
         var lines = await File.ReadAllLinesAsync(path);
-        Assert.Equal(4, lines.Length);
+        Assert.Equal(3, lines.Length);
         Assert.Contains("Key,Status,GameTitle", lines[0]);
-        Assert.Contains(lines.Skip(1), l => l.Contains("Activated"));
+        Assert.DoesNotContain(lines.Skip(1), l => l.Contains("Activated"));
     }
 
     [Fact]

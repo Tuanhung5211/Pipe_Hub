@@ -61,7 +61,7 @@ public class LibraryService : ILibraryService
         // Bước 2: Load Games (Include Publisher)
         var games = await context.Games
             .Include(g => g.Publisher)
-            .Where(g => gameIds.Contains(g.Id) && !g.IsDeleted)
+            .Where(g => gameIds.Contains(g.Id))
             .ToListAsync();
 
         // Bước 3: Playtime sum per game

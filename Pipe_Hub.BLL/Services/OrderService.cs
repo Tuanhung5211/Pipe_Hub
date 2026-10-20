@@ -295,7 +295,7 @@ public class OrderService : IOrderService
         }
 
         // Player chỉ xem đơn của mình
-        if (_currentUser.IsPlayer && order.UserId != _currentUser.UserId)
+        if (!_currentUser.IsAdmin && !_currentUser.IsPublisher && order.UserId != _currentUser.UserId)
         {
             throw new AppException("Bạn không có quyền xem đơn hàng này.");
         }
