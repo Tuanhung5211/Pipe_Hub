@@ -84,6 +84,7 @@ internal static class Program
                     services.AddTransient<Pipe_Hub.UI.Forms.Publisher.AchievementForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Shared.DashboardForm>();
                     services.AddTransient<Pipe_Hub.UI.Forms.Shared.ReportForm>();
+                    services.AddTransient<Pipe_Hub.UI.Forms.Shared.ChatForm>();
                 })
                 .Build();
 

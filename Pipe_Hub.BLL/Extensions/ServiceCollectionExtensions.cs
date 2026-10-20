@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
 
         // ===== Services nhóm Reporting (Transient) =====
         services.AddTransient<IReportService, ReportService>();
+        services.AddTransient<IChatService, FaqChatService>();
         services.AddTransient<Pipe_Hub.BLL.Reports.ExcelReportBuilder>();
         services.AddTransient<Pipe_Hub.BLL.Reports.PdfReportBuilder>();
 

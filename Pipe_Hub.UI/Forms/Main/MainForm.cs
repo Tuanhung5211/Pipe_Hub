@@ -235,7 +235,9 @@ public class MainForm : Form
         _menuStrip.Items.Add(menuPlayer);
 
         var menuChat = new ToolStripMenuItem("Trợ giúp");
-        AddPlaceholderItem(menuChat, "Chatbot", "D18");
+        var menuChatbot = new ToolStripMenuItem("Trợ lý ảo");
+        menuChatbot.Click += (s, e) => OpenMdiChild<ChatForm>();
+        menuChat.DropDownItems.Add(menuChatbot);
         _menuStrip.Items.Add(menuChat);
     }
 
