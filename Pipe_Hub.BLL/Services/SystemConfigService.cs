@@ -1,7 +1,9 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Pipe_Hub.BLL.Common;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
+using Pipe_Hub.BLL.Security;
 using Pipe_Hub.DAL.Data;
 using Pipe_Hub.DAL.Entities;
 
@@ -14,12 +16,24 @@ namespace Pipe_Hub.BLL.Services;
 public class SystemConfigService : ISystemConfigService
 {
     private readonly IDbContextFactory<PipeHubDbContext> _contextFactory;
+    private readonly CurrentUserContext _currentUser;
     private readonly object _lock = new();
     private Dictionary<string, string>? _cache;
 
-    public SystemConfigService(IDbContextFactory<PipeHubDbContext> contextFactory)
+    public SystemConfigService(
+        IDbContextFactory<PipeHubDbContext> contextFactory,
+        CurrentUserContext currentUser)
     {
         _contextFactory = contextFactory;
+        _currentUser = currentUser;
+    }
+
+    private void EnsureAdmin()
+    {
+        if (!_currentUser.IsAdmin)
+        {
+            throw new AppException("Chỉ Admin mới có quyền cấu hình hệ thống.");
+        }
     }
 
     private async Task<Dictionary<string, string>> GetCacheAsync()
@@ -65,6 +79,8 @@ public class SystemConfigService : ISystemConfigService
 
     public async Task SetAsync(string key, string value, string? description = null)
     {
+        EnsureAdmin();
+
         await using var context = await _contextFactory.CreateDbContextAsync();
 
         var existing = await context.SystemConfigs.FirstOrDefaultAsync(x => x.Key == key);
@@ -94,6 +110,8 @@ public class SystemConfigService : ISystemConfigService
 
     public async Task<IReadOnlyList<SystemConfigDto>> GetAllAsync()
     {
+        EnsureAdmin();
+
         await using var context = await _contextFactory.CreateDbContextAsync();
 
         var items = await context.SystemConfigs

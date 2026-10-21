@@ -19,7 +19,7 @@ public class VnPaySandboxClient : IPaymentGateway
     public async Task<PaymentResponse> CreatePaymentUrlAsync(PaymentRequest request)
     {
         var transactionId = Guid.NewGuid().ToString("N");
-        var paymentUrl = $"{SandboxPaymentUrl}?txn={transactionId}&amount={request.Amount}";
+        var paymentUrl = $"{SandboxPaymentUrl}?txn={request.OrderCode}&amount={request.Amount}";
 
         try
         {

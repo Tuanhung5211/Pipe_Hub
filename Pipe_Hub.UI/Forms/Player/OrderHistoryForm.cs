@@ -147,7 +147,7 @@ public class OrderHistoryForm : BaseCrudForm
             _grid.Rows.Add(
                 order.Id,
                 order.OrderCode,
-                order.CreatedAt,
+                order.CreatedAt.ToLocalTime(),
                 order.Items.Count,
                 order.TotalAmount,
                 order.Status,

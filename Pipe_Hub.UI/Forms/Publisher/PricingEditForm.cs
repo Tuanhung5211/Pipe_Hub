@@ -121,9 +121,14 @@ public class PricingEditForm : Form
         y += rowH;
 
         // Thời gian sale
+        // DB lưu UTC → đổi sang Local để hiển thị trên DateTimePicker.
         var now = DateTime.Now;
-        var saleStart = _existingGame.SaleStartAt ?? now;
-        var saleEnd = _existingGame.SaleEndAt ?? saleStart.AddDays(7);
+        var saleStart = _existingGame.SaleStartAt.HasValue
+            ? DateTime.SpecifyKind(_existingGame.SaleStartAt.Value, DateTimeKind.Utc).ToLocalTime()
+            : now;
+        var saleEnd = _existingGame.SaleEndAt.HasValue
+            ? DateTime.SpecifyKind(_existingGame.SaleEndAt.Value, DateTimeKind.Utc).ToLocalTime()
+            : saleStart.AddDays(7);
         if (saleEnd <= saleStart) saleEnd = saleStart.AddDays(7);
 
         controls.Add(new Label { Text = "Bắt đầu:", Location = new Point(labelX, y), Size = new Size(125, 25) });
@@ -234,8 +239,9 @@ public class PricingEditForm : Form
         if (_chkIsOnSale.Checked)
         {
             salePrice = _nudSalePrice.Value;
-            saleStart = _dtpSaleStart.Value;
-            saleEnd = _dtpSaleEnd.Value;
+            // DateTimePicker trả về Kind = Unspecified (giờ Local) → đổi sang UTC trước khi lưu.
+            saleStart = _dtpSaleStart.Value.ToUniversalTime();
+            saleEnd = _dtpSaleEnd.Value.ToUniversalTime();
         }
 
         await this.RunSafeAsync(async () =>

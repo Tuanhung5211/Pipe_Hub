@@ -321,7 +321,7 @@ public class LibraryForm : Form
         var item = row.DataBoundItem as LibraryItemDto;
         if (item is null) return;
 
-        var detailForm = ActivatorUtilities.CreateInstance<GameDetailForm>(
+        using var detailForm = ActivatorUtilities.CreateInstance<GameDetailForm>(
             _serviceProvider, item.GameId);
         detailForm.ShowDialog(this);
 

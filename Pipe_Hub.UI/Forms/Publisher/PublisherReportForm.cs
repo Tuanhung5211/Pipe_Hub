@@ -209,8 +209,8 @@ public class PublisherReportForm : Form
             {
                 var filter = new RevenueFilterDto
                 {
-                    FromDate = _dtpFrom.Value.Date,
-                    ToDate = _dtpTo.Value.Date.AddDays(1).AddTicks(-1) // Hết ngày
+                    FromDate = _dtpFrom.Value.Date.ToUniversalTime(),
+                    ToDate = _dtpTo.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime() // Hết ngày (Local → UTC)
                 };
 
                 var data = await _reportService.GetRevenueDetailsForPublisherAsync(filter);
@@ -236,7 +236,7 @@ public class PublisherReportForm : Form
         {
             _grid.Rows.Add(
                 item.OrderCode,
-                item.CreatedAt.ToString("dd/MM/yyyy"),
+                item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy"),
                 item.GameTitle,
                 item.BuyerUsername,
                 item.Quantity,

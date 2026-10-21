@@ -17,6 +17,7 @@ public class GameDetailForm : Form
     private Label _lblPublisher = null!;
     private Label _lblPrice = null!;
     private Label _lblSalePrice = null!;
+    private Font? _saleFont;
     private TextBox _txtDescription = null!;
     private Label _lblGenres = null!;
     private Label _lblTags = null!;
@@ -271,7 +272,8 @@ public class GameDetailForm : Form
 
             if (isOnSale)
             {
-                _lblPrice.Font = new Font("Segoe UI", 10F, FontStyle.Strikeout);
+                _saleFont ??= new Font("Segoe UI", 10F, FontStyle.Strikeout);
+                _lblPrice.Font = _saleFont;
                 _lblPrice.ForeColor = Color.Gray;
                 _lblSalePrice.Text = $"→ {game.SalePrice!.Value:N0} đ (SALE)";
             }
@@ -373,5 +375,15 @@ public class GameDetailForm : Form
                 }
             }
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _saleFont?.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 }

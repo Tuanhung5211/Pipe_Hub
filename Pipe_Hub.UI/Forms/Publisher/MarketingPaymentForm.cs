@@ -192,7 +192,7 @@ public class MarketingPaymentForm : Form
         {
             await this.RunSafeAsync(async () =>
             {
-                var result = await _paymentService.ProcessCallbackAsync("vnp_ResponseCode=00");
+                var result = await _paymentService.ProcessCallbackAsync("vnp_ResponseCode=00&txn=999999");
 
                 if (!result.IsSuccess)
                 {

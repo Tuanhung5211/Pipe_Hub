@@ -80,6 +80,17 @@ public class WalletService : IWalletService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
+        if (!string.IsNullOrWhiteSpace(paymentReference))
+        {
+            var referenceExists = await context.TopUpRequests
+                .AnyAsync(t => t.PaymentReference == paymentReference);
+
+            if (referenceExists)
+            {
+                return Result<TopUpRequestDto>.Failure("Mã giao dịch đã tồn tại.");
+            }
+        }
+
         var request = new TopUpRequest
         {
             UserId = _currentUser.UserId.Value,
@@ -188,6 +199,7 @@ public class WalletService : IWalletService
         try
         {
             var request = await context.TopUpRequests
+                .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == topUpRequestId);
 
             if (request is null)
@@ -195,9 +207,17 @@ public class WalletService : IWalletService
                 throw new AppException($"Không tìm thấy yêu cầu nạp Id = {topUpRequestId}.");
             }
 
-            if (request.Status != TopUpStatus.Pending)
+            // Chỉ cập nhật khi yêu cầu vẫn còn Pending → chặn 2 Admin duyệt cùng lúc
+            var rows = await context.TopUpRequests
+                .Where(t => t.Id == topUpRequestId && t.Status == TopUpStatus.Pending)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.Status, TopUpStatus.Approved)
+                    .SetProperty(t => t.ApprovedAt, DateTime.UtcNow));
+
+            if (rows == 0)
             {
-                return Result.Failure($"Yêu cầu đã được xử lý (Status = {request.Status}).");
+                await transaction.RollbackAsync();
+                return Result.Failure("Yêu cầu đã được xử lý hoặc không tồn tại.");
             }
 
             var wallet = await context.Wallets
@@ -224,10 +244,6 @@ public class WalletService : IWalletService
             };
             context.Transactions.Add(txn);
 
-            // Cập nhật TopUpRequest
-            request.Status = TopUpStatus.Approved;
-            request.ApprovedAt = DateTime.UtcNow;
-
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -239,6 +255,13 @@ public class WalletService : IWalletService
                 entityId: request.Id);
 
             return Result.Success();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // RowVersion conflict — 2 Admin duyệt cùng lúc
+            await transaction.RollbackAsync();
+            return Result.Failure(
+                "Giao dịch bị xung đột do có thao tác đồng thời. Vui lòng thử lại.");
         }
         catch
         {
@@ -262,6 +285,7 @@ public class WalletService : IWalletService
         await using var context = await _contextFactory.CreateDbContextAsync();
 
         var request = await context.TopUpRequests
+            .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == topUpRequestId);
 
         if (request is null)
@@ -269,14 +293,18 @@ public class WalletService : IWalletService
             throw new AppException($"Không tìm thấy yêu cầu nạp Id = {topUpRequestId}.");
         }
 
-        if (request.Status != TopUpStatus.Pending)
-        {
-            return Result.Failure($"Yêu cầu đã được xử lý (Status = {request.Status}).");
-        }
+        // Chỉ cập nhật khi yêu cầu vẫn còn Pending → chặn 2 Admin xử lý cùng lúc
+        var trimmedReason = reason.Trim();
+        var rows = await context.TopUpRequests
+            .Where(t => t.Id == topUpRequestId && t.Status == TopUpStatus.Pending)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, TopUpStatus.Rejected)
+                .SetProperty(t => t.RejectReason, trimmedReason));
 
-        request.Status = TopUpStatus.Rejected;
-        request.RejectReason = reason.Trim();
-        await context.SaveChangesAsync();
+        if (rows == 0)
+        {
+            return Result.Failure("Yêu cầu đã được xử lý hoặc không tồn tại.");
+        }
 
         _ = _logService.WriteAsync(
             action: "RejectTopUp",

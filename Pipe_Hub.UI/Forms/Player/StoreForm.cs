@@ -44,7 +44,7 @@ public class StoreForm : BaseCrudForm
 
         // TODO D5.5: mở GameDetailForm với selected.Id
         // GameDetailForm có tham số gameId nên không đăng ký DI thường → dùng ActivatorUtilities
-        var detailForm = ActivatorUtilities.CreateInstance<GameDetailForm>(
+        using var detailForm = ActivatorUtilities.CreateInstance<GameDetailForm>(
             _serviceProvider, selected.Id);
         detailForm.ShowDialog(this);
 

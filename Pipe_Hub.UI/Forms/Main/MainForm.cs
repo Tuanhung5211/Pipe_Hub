@@ -255,23 +255,11 @@ public class MainForm : Form
         _menuStrip.Items.Add(menuChat);
     }
 
-    private void AddPlaceholderItem(ToolStripMenuItem parentMenu, string text, string targetDay)
-    {
-        var item = new ToolStripMenuItem(text);
-        item.Click += (s, e) =>
-        {
-            MessageBox.Show(
-                $"Chức năng này sẽ được triển khai ở {targetDay}.",
-                "Thông báo",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-        };
-        parentMenu.DropDownItems.Add(item);
-    }
-
     private void MenuChangePassword_Click(object? sender, EventArgs e)
     {
-        var changePassForm = _serviceProvider.GetRequiredService<ChangePasswordForm>();
+        // Tạo scope riêng → dispose cùng form, tránh root container giữ tham chiếu
+        using var scope = _serviceProvider.CreateScope();
+        var changePassForm = scope.ServiceProvider.GetRequiredService<ChangePasswordForm>();
         changePassForm.ShowDialog(this);
     }
 
@@ -290,9 +278,11 @@ public class MainForm : Form
             return;
         }
 
-        // Tạo mới qua DI
-        var form = _serviceProvider.GetRequiredService<TForm>();
+        // Tạo scope riêng cho form → dispose scope khi form đóng (tránh root container track Transient IDisposable)
+        var scope = _serviceProvider.CreateScope();
+        var form = scope.ServiceProvider.GetRequiredService<TForm>();
         form.MdiParent = this;
+        form.FormClosed += (_, _) => scope.Dispose();
         form.Show();
     }
 

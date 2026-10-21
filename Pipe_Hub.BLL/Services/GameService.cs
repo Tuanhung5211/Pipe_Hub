@@ -36,16 +36,17 @@ public class GameService : IGameService
         await using var context = await _contextFactory.CreateDbContextAsync();
 
         var query = context.Games
+            .AsNoTracking()
             .Include(g => g.Publisher)
             .Include(g => g.Genres)
             .Include(g => g.Tags)
             .Include(g => g.Languages)
             .Where(g => !g.IsDeleted);
 
-        // Player chỉ thấy Approved
-        if (_currentUser.IsPlayer)
+        // Admin thấy hết
+        if (_currentUser.IsAdmin)
         {
-            query = query.Where(g => g.Status == GameStatus.Approved);
+            // Không lọc
         }
         // Publisher chỉ thấy game của mình + game Approved của người khác
         else if (_currentUser.IsPublisher && _currentUser.UserId.HasValue)
@@ -53,7 +54,11 @@ public class GameService : IGameService
             var myId = _currentUser.UserId.Value;
             query = query.Where(g => g.PublisherId == myId || g.Status == GameStatus.Approved);
         }
-        // Admin thấy hết
+        // Player/Anonymous chỉ thấy game Approved (mặc định từ chối)
+        else
+        {
+            query = query.Where(g => g.Status == GameStatus.Approved);
+        }
 
         var games = await query.OrderByDescending(g => g.CreatedAt).ToListAsync();
         return games.Select(g => g.ToDto()).ToList();
@@ -63,12 +68,32 @@ public class GameService : IGameService
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var game = await context.Games
+        var query = context.Games
+            .AsNoTracking()
             .Include(g => g.Publisher)
             .Include(g => g.Genres)
             .Include(g => g.Tags)
             .Include(g => g.Languages)
-            .FirstOrDefaultAsync(g => g.Id == id && !g.IsDeleted);
+            .Where(g => g.Id == id && !g.IsDeleted);
+
+        // Admin thấy hết
+        if (_currentUser.IsAdmin)
+        {
+            // Không lọc
+        }
+        // Publisher thấy game của mình + game Approved của người khác
+        else if (_currentUser.IsPublisher && _currentUser.UserId.HasValue)
+        {
+            var myId = _currentUser.UserId.Value;
+            query = query.Where(g => g.PublisherId == myId || g.Status == GameStatus.Approved);
+        }
+        // Player/Anonymous chỉ xem được game đã duyệt (mặc định từ chối)
+        else
+        {
+            query = query.Where(g => g.Status == GameStatus.Approved);
+        }
+
+        var game = await query.FirstOrDefaultAsync();
 
         if (game is null)
         {
@@ -87,12 +112,21 @@ public class GameService : IGameService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var games = await context.Games
+        var query = context.Games
+            .AsNoTracking()
             .Include(g => g.Publisher)
             .Include(g => g.Genres)
             .Include(g => g.Tags)
             .Include(g => g.Languages)
-            .Where(g => g.PublisherId == publisherId && !g.IsDeleted)
+            .Where(g => g.PublisherId == publisherId && !g.IsDeleted);
+
+        // Player chỉ thấy game đã duyệt của publisher này
+        if (_currentUser.IsPlayer)
+        {
+            query = query.Where(g => g.Status == GameStatus.Approved);
+        }
+
+        var games = await query
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync();
 
@@ -188,6 +222,12 @@ public class GameService : IGameService
         if (_currentUser.IsPublisher && game.PublisherId != _currentUser.UserId)
         {
             throw new AppException("Bạn không có quyền thao tác trên game này.");
+        }
+
+        // Giá gốc mới phải lớn hơn giá sale đang áp dụng
+        if (game.SalePrice.HasValue && price <= game.SalePrice.Value)
+        {
+            return Result<GameDto>.Failure("Giá gốc mới phải lớn hơn giá sale đang áp dụng.");
         }
 
         game.Title = title.Trim();

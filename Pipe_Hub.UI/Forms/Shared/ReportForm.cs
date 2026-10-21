@@ -202,15 +202,20 @@ public class ReportForm : Form
             {
                 var filter = new RevenueFilterDto
                 {
-                    FromDate = _dtpFrom.Value.Date,
-                    ToDate = _dtpTo.Value.Date.AddDays(1).AddTicks(-1), // Hết ngày
+                    FromDate = _dtpFrom.Value.Date.ToUniversalTime(),
+                    ToDate = _dtpTo.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime(), // Hết ngày (Local → UTC)
                     MinAmount = _nudMinAmount.Value > 0 ? _nudMinAmount.Value : null,
                     MaxAmount = _nudMaxAmount.Value > 0 ? _nudMaxAmount.Value : null
                 };
 
                 var data = await _reportService.GetRevenueDetailsAsync(filter);
                 _currentData = data.ToList();
-                _grid.DataSource = new SortableBindingList<OrderDto>(_currentData);
+
+                // Grid hiển thị giờ Local thay vì UTC
+                var displayData = _currentData
+                    .Select(o => o with { CreatedAt = o.CreatedAt.ToLocalTime() })
+                    .ToList();
+                _grid.DataSource = new SortableBindingList<OrderDto>(displayData);
                 _lblStatus.Text = $"Tìm thấy {_currentData.Count} đơn hàng.";
             }
             finally
@@ -304,10 +309,20 @@ public class ReportForm : Form
         if (_currentData.Count == 0) { MessageBox.Show("Không có dữ liệu để in."); return; }
 
         int rowIndex = 0; // Con trỏ dòng đang vẽ, sống ngoài PrintPage
+        int pageNumber = 0; // Số trang in hiện tại, reset mỗi lần bắt đầu in
 
-        var printDoc = new PrintDocument();
+        using var printDoc = new PrintDocument();
+
+        printDoc.BeginPrint += (_, _) =>
+        {
+            rowIndex = 0;
+            pageNumber = 0;
+        };
+
         printDoc.PrintPage += (s, e) =>
         {
+            pageNumber++;
+
             var g = e.Graphics;
             if (g is null) { e.HasMorePages = false; return; }
 
@@ -320,7 +335,7 @@ public class ReportForm : Form
             // ==== HEADER: vẽ ở mọi trang ====
             g.DrawString("BÁO CÁO DOANH THU CHI TIẾT", fontTitle, Brushes.Black, 150, y);
             y += 40;
-            g.DrawString($"Ngày in: {DateTime.Now:dd/MM/yyyy HH:mm}  —  Trang {(rowIndex == 0 ? 1 : (rowIndex / 25) + 1)}",
+            g.DrawString($"Ngày in: {DateTime.Now:dd/MM/yyyy HH:mm}  —  Trang {pageNumber}",
                 fontBody, Brushes.Black, 50, y);
             y += 30;
 

@@ -87,8 +87,8 @@ public class LogViewerForm : BaseCrudForm
     {
         await this.RunSafeAsync(async () =>
         {
-            var fromDate = _dtpFrom.Value.Date;
-            var toDate = _dtpTo.Value.Date.AddDays(1).AddTicks(-1);
+            var fromDate = _dtpFrom.Value.Date.ToUniversalTime();
+            var toDate = _dtpTo.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
             var action = _txtAction.Text.Trim();
 
             var logs = await _logService.GetLogsByFilterAsync(
@@ -174,7 +174,7 @@ public class LogViewerForm : BaseCrudForm
         {
             _grid.Rows.Add(
                 log.Id,
-                log.CreatedAt,
+                log.CreatedAt.ToLocalTime(),
                 (object?)log.Username ?? DBNull.Value,
                 log.Action,
                 (object?)log.EntityName ?? DBNull.Value,

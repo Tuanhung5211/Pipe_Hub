@@ -7,7 +7,6 @@ using Pipe_Hub.BLL.Security;
 using Pipe_Hub.DAL.Data;
 using Pipe_Hub.DAL.Entities;
 using Pipe_Hub.DAL.Enums;
-using Pipe_Hub.DAL.Repositories;
 
 namespace Pipe_Hub.BLL.Services;
 
@@ -51,8 +50,9 @@ public class OrderService : IOrderService
         var userId = _currentUser.UserId.Value;
 
         await using var context = await _contextFactory.CreateDbContextAsync();
-        await using var uow = new UnitOfWork(context);
         await using var transaction = await context.Database.BeginTransactionAsync();
+
+        int orderId;
 
         try
         {
@@ -96,6 +96,12 @@ public class OrderService : IOrderService
                         && game.SaleEndAt.Value >= now;
 
             var unitPrice = isOnSale ? game.SalePrice!.Value : game.Price;
+
+            if (unitPrice < 0)
+            {
+                return Result<OrderDto>.Failure("Giá game không hợp lệ.");
+            }
+
             var totalAmount = unitPrice * quantity;
 
             // 4. Load wallet
@@ -208,14 +214,8 @@ public class OrderService : IOrderService
                 entityName: nameof(Order),
                 entityId: order.Id);
 
-            // 13. Load lại để map DTO (cần Items + Keys)
-            var freshOrder = await context.Orders
-                .Include(o => o.User)
-                .Include(o => o.Items).ThenInclude(i => i.Game)
-                .Include(o => o.Keys)
-                .FirstAsync(o => o.Id == order.Id);
-
-            return Result<OrderDto>.Success(freshOrder.ToDto());
+            // 13. Giữ Id để load lại DTO sau khi ra khỏi transaction
+            orderId = order.Id;
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -229,6 +229,16 @@ public class OrderService : IOrderService
             await transaction.RollbackAsync();
             throw;
         }
+
+        // 14. Load lại để map DTO (cần Items + Keys).
+        // Query này nằm NGOÀI transaction: nếu lỗi sau CommitAsync thì KHÔNG gọi RollbackAsync.
+        var freshOrder = await context.Orders
+            .Include(o => o.User)
+            .Include(o => o.Items).ThenInclude(i => i.Game)
+            .Include(o => o.Keys)
+            .FirstAsync(o => o.Id == orderId);
+
+        return Result<OrderDto>.Success(freshOrder.ToDto());
     }
 
     public async Task<IReadOnlyList<OrderDto>> GetMyOrdersAsync()
@@ -296,6 +306,13 @@ public class OrderService : IOrderService
 
         // Player chỉ xem đơn của mình
         if (!_currentUser.IsAdmin && !_currentUser.IsPublisher && order.UserId != _currentUser.UserId)
+        {
+            throw new AppException("Bạn không có quyền xem đơn hàng này.");
+        }
+
+        // Publisher chỉ xem đơn có chứa game của mình
+        if (_currentUser.IsPublisher
+            && !order.Items.Any(i => i.Game.PublisherId == _currentUser.UserId))
         {
             throw new AppException("Bạn không có quyền xem đơn hàng này.");
         }

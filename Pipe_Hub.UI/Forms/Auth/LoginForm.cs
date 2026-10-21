@@ -201,7 +201,9 @@ public class LoginForm : Form
 
     private void BtnRegister_Click(object? sender, EventArgs e)
     {
-        var registerForm = _serviceProvider.GetRequiredService<RegisterForm>();
+        // Tạo scope riêng → dispose cùng form modal
+        using var scope = _serviceProvider.CreateScope();
+        var registerForm = scope.ServiceProvider.GetRequiredService<RegisterForm>();
         registerForm.ShowDialog(this);
     }
 

@@ -46,10 +46,69 @@ public class ReportService : IReportService
 
         await using var context = await _contextFactory.CreateDbContextAsync();
 
-        var rows = await context.Orders
+        if (_currentUser.IsPublisher)
+        {
+            // Publisher chỉ được thấy doanh thu từ các game của chính mình.
+            var publisherId = _currentUser.UserId
+                ?? throw new AppException("Không tìm thấy Publisher hiện tại.");
+
+            var publisherItems = await context.OrderItems
+                .AsNoTracking()
+                .Include(oi => oi.Order)
+                .Where(oi => oi.Game.PublisherId == publisherId
+                          && oi.Order.Status == OrderStatus.Completed)
+                .Select(oi => new
+                {
+                    oi.Order.CreatedAt,
+                    oi.UnitPrice,
+                    oi.Quantity
+                })
+                .ToListAsync();
+
+            // GroupBy trên RAM theo giờ Local (đơn 00:00–07:00 local không bị tính sang tháng trước)
+            var publisherRows = publisherItems
+                .GroupBy(oi => new
+                {
+                    oi.CreatedAt.ToLocalTime().Year,
+                    oi.CreatedAt.ToLocalTime().Month
+                })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity)
+                })
+                .OrderByDescending(r => r.Year)
+                .ThenByDescending(r => r.Month)
+                .Take(months)
+                .ToList();
+
+            // Đã lấy N tháng gần nhất theo thứ tự giảm dần → đảo lại để biểu đồ chạy trái → phải
+            publisherRows.Reverse();
+
+            return publisherRows
+                .Select(r => new RevenueByMonthDto
+                {
+                    Year = r.Year,
+                    Month = r.Month,
+                    TotalRevenue = r.TotalRevenue
+                })
+                .ToList();
+        }
+
+        var orders = await context.Orders
             .AsNoTracking()
             .Where(o => o.Status == OrderStatus.Completed)
-            .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month })
+            .Select(o => new { o.CreatedAt, o.TotalAmount })
+            .ToListAsync();
+
+        // GroupBy trên RAM theo giờ Local
+        var rows = orders
+            .GroupBy(o => new
+            {
+                o.CreatedAt.ToLocalTime().Year,
+                o.CreatedAt.ToLocalTime().Month
+            })
             .Select(g => new
             {
                 g.Key.Year,
@@ -59,7 +118,7 @@ public class ReportService : IReportService
             .OrderByDescending(r => r.Year)
             .ThenByDescending(r => r.Month)
             .Take(months)
-            .ToListAsync();
+            .ToList();
 
         // Đã lấy N tháng gần nhất theo thứ tự giảm dần → đảo lại để biểu đồ chạy trái → phải
         rows.Reverse();

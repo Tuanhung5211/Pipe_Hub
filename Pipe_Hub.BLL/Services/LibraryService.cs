@@ -4,6 +4,7 @@ using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.BLL.Security;
 using Pipe_Hub.DAL.Data;
+using Pipe_Hub.DAL.Enums;
 
 namespace Pipe_Hub.BLL.Services;
 
@@ -32,8 +33,10 @@ public class LibraryService : ILibraryService
 
         // Bước 1: Lấy danh sách game đã mua (distinct) + giá + ngày mua sớm nhất
         var purchasedItems = await context.OrderItems
+            .AsNoTracking()
             .Include(oi => oi.Order)
-            .Where(oi => oi.Order.UserId == userId)
+            .Where(oi => oi.Order.UserId == userId
+                      && oi.Order.Status == OrderStatus.Completed)
             .Select(oi => new
             {
                 oi.GameId,
@@ -60,12 +63,14 @@ public class LibraryService : ILibraryService
 
         // Bước 2: Load Games (Include Publisher)
         var games = await context.Games
+            .AsNoTracking()
             .Include(g => g.Publisher)
             .Where(g => gameIds.Contains(g.Id))
             .ToListAsync();
 
         // Bước 3: Playtime sum per game
         var playtimeByGame = await context.PlaySessions
+            .AsNoTracking()
             .Where(ps => ps.UserId == userId && gameIds.Contains(ps.GameId))
             .GroupBy(ps => ps.GameId)
             .Select(g => new
