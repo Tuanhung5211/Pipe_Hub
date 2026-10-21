@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
+using Pipe_Hub.UI.Controls;
 using Pipe_Hub.UI.Helpers;
 
 namespace Pipe_Hub.UI.Forms.Auth;
@@ -9,10 +10,11 @@ public class RegisterForm : Form
 {
     private readonly IAuthService _authService;
 
-    private TextBox _txtUsername = null!;
+    private SafeTextBox _txtUsername = null!;
     private TextBox _txtEmail = null!;
-    private TextBox _txtPassword = null!;
-    private TextBox _txtConfirmPassword = null!;
+    private SafeTextBox _txtPassword = null!;
+    private SafeTextBox _txtConfirmPassword = null!;
+    private CheckBox _chkShowPassword = null!;
     private TextBox _txtFullName = null!;
     private TextBox _txtCountry = null!;
     private Button _btnRegister = null!;
@@ -23,6 +25,8 @@ public class RegisterForm : Form
     {
         _authService = authService;
         InitializeComponents();
+
+        Load += (s, e) => _txtUsername.Focus();
     }
 
     private void InitializeComponents()
@@ -55,7 +59,8 @@ public class RegisterForm : Form
         int labelX = 40, inputX = 160, inputW = 220, rowH = 32;
 
         var lblUsername = new Label { Text = "Tên đăng nhập:", Location = new Point(labelX, y), Size = new Size(120, 25) };
-        _txtUsername = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25) };
+        _txtUsername = new SafeTextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25) };
+        _txtUsername.TextChanged += TextBoxHelper.SanitizeUsername;
         _txtUsername.Validating += TxtUsername_Validating;
         y += rowH;
 
@@ -65,7 +70,8 @@ public class RegisterForm : Form
         y += rowH;
 
         var lblPassword = new Label { Text = "Mật khẩu:", Location = new Point(labelX, y), Size = new Size(120, 25) };
-        _txtPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtPassword = new SafeTextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtPassword.TextChanged += TextBoxHelper.SanitizePassword;
         _txtPassword.Validating += TxtPassword_Validating;
         _txtPassword.TextChanged += (s, e) =>
         {
@@ -75,9 +81,24 @@ public class RegisterForm : Form
         y += rowH;
 
         var lblConfirm = new Label { Text = "Xác nhận mật khẩu:", Location = new Point(labelX, y), Size = new Size(120, 25) };
-        _txtConfirmPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtConfirmPassword = new SafeTextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtConfirmPassword.TextChanged += TextBoxHelper.SanitizePassword;
         _txtConfirmPassword.Validating += TxtConfirmPassword_Validating;
         y += rowH;
+
+        _chkShowPassword = new CheckBox
+        {
+            Text = "Hiện mật khẩu",
+            Location = new Point(inputX, y),
+            Size = new Size(inputW, 22)
+        };
+        _chkShowPassword.CheckedChanged += (s, e) =>
+        {
+            var show = _chkShowPassword.Checked;
+            _txtPassword.UseSystemPasswordChar = !show;
+            _txtConfirmPassword.UseSystemPasswordChar = !show;
+        };
+        y += 26;
 
         var lblFullName = new Label { Text = "Họ tên:", Location = new Point(labelX, y), Size = new Size(120, 25) };
         _txtFullName = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25) };
@@ -114,6 +135,7 @@ public class RegisterForm : Form
         {
             lblTitle, lblUsername, _txtUsername, lblEmail, _txtEmail,
             lblPassword, _txtPassword, lblConfirm, _txtConfirmPassword,
+            _chkShowPassword,
             lblFullName, _txtFullName, lblCountry, _txtCountry,
             _btnRegister, _btnCancel
         });
@@ -161,8 +183,8 @@ public class RegisterForm : Form
 
         var username = _txtUsername.Text.Trim();
         var email = _txtEmail.Text.Trim();
-        var password = _txtPassword.Text;
-        var confirmPassword = _txtConfirmPassword.Text;
+        var password = _txtPassword.Text.Trim();
+        var confirmPassword = _txtConfirmPassword.Text.Trim();
         var fullName = _txtFullName.Text.Trim();
         var country = _txtCountry.Text.Trim();
 

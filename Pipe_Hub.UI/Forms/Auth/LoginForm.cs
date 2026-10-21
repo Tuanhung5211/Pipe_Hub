@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.BLL.Security;
+using Pipe_Hub.UI.Controls;
 using Pipe_Hub.UI.Forms.Main;
 using Pipe_Hub.UI.Helpers;
 
@@ -14,8 +15,9 @@ public class LoginForm : Form
     private readonly CurrentUserContext _currentUser;
     private readonly IServiceProvider _serviceProvider;
 
-    private TextBox _txtUsername = null!;
-    private TextBox _txtPassword = null!;
+    private SafeTextBox _txtUsername = null!;
+    private SafeTextBox _txtPassword = null!;
+    private CheckBox _chkShowPassword = null!;
     private Button _btnLogin = null!;
     private Button _btnRegister = null!;
     private ErrorProvider _errorProvider = null!;
@@ -31,6 +33,8 @@ public class LoginForm : Form
         _serviceProvider = serviceProvider;
 
         InitializeComponents();
+
+        Load += (s, e) => _txtUsername.Focus();
     }
 
     private void InitializeComponents()
@@ -66,11 +70,12 @@ public class LoginForm : Form
             Size = new Size(120, 25)
         };
 
-        _txtUsername = new TextBox
+        _txtUsername = new SafeTextBox
         {
             Location = new Point(170, 90),
             Size = new Size(180, 25)
         };
+        _txtUsername.TextChanged += TextBoxHelper.SanitizeUsername;
         _txtUsername.Validating += TxtUsername_Validating;
 
         var lblPassword = new Label
@@ -80,13 +85,23 @@ public class LoginForm : Form
             Size = new Size(120, 25)
         };
 
-        _txtPassword = new TextBox
+        _txtPassword = new SafeTextBox
         {
             Location = new Point(170, 130),
             Size = new Size(180, 25),
             UseSystemPasswordChar = true
         };
+        _txtPassword.TextChanged += TextBoxHelper.SanitizePassword;
         _txtPassword.Validating += TxtPassword_Validating;
+
+        _chkShowPassword = new CheckBox
+        {
+            Text = "Hiện mật khẩu",
+            Location = new Point(170, 157),
+            Size = new Size(180, 20)
+        };
+        _chkShowPassword.CheckedChanged += (s, e) =>
+            _txtPassword.UseSystemPasswordChar = !_chkShowPassword.Checked;
 
         _btnLogin = new Button
         {
@@ -112,7 +127,7 @@ public class LoginForm : Form
         Controls.AddRange(new Control[]
         {
             _lblTitle, lblUsername, _txtUsername, lblPassword, _txtPassword,
-            _btnLogin, _btnRegister
+            _chkShowPassword, _btnLogin, _btnRegister
         });
     }
 
@@ -135,7 +150,7 @@ public class LoginForm : Form
         if (!ValidateChildren()) return;
 
         var username = _txtUsername.Text.Trim();
-        var password = _txtPassword.Text;
+        var password = _txtPassword.Text.Trim();
 
         await this.RunSafeAsync(async () =>
         {

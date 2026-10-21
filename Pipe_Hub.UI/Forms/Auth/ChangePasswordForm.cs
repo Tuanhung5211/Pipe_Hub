@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Pipe_Hub.BLL.DTOs;
 using Pipe_Hub.BLL.Interfaces;
 using Pipe_Hub.BLL.Security;
+using Pipe_Hub.UI.Controls;
 using Pipe_Hub.UI.Helpers;
 
 namespace Pipe_Hub.UI.Forms.Auth;
@@ -11,9 +12,10 @@ public class ChangePasswordForm : Form
     private readonly IAuthService _authService;
     private readonly CurrentUserContext _currentUser;
 
-    private TextBox _txtOldPassword = null!;
-    private TextBox _txtNewPassword = null!;
-    private TextBox _txtConfirmNewPassword = null!;
+    private SafeTextBox _txtOldPassword = null!;
+    private SafeTextBox _txtNewPassword = null!;
+    private SafeTextBox _txtConfirmNewPassword = null!;
+    private CheckBox _chkShowPassword = null!;
     private Button _btnChange = null!;
     private Button _btnCancel = null!;
     private ErrorProvider _errorProvider = null!;
@@ -23,6 +25,8 @@ public class ChangePasswordForm : Form
         _authService = authService;
         _currentUser = currentUser;
         InitializeComponents();
+
+        Load += (s, e) => _txtOldPassword.Focus();
     }
 
     private void InitializeComponents()
@@ -55,12 +59,14 @@ public class ChangePasswordForm : Form
         int labelX = 40, inputX = 180, inputW = 180;
 
         var lblOld = new Label { Text = "Mật khẩu cũ:", Location = new Point(labelX, y), Size = new Size(130, 25) };
-        _txtOldPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtOldPassword = new SafeTextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtOldPassword.TextChanged += TextBoxHelper.SanitizePassword;
         _txtOldPassword.Validating += TxtOldPassword_Validating;
         y += 32;
 
         var lblNew = new Label { Text = "Mật khẩu mới:", Location = new Point(labelX, y), Size = new Size(130, 25) };
-        _txtNewPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtNewPassword = new SafeTextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtNewPassword.TextChanged += TextBoxHelper.SanitizePassword;
         _txtNewPassword.Validating += TxtNewPassword_Validating;
         _txtNewPassword.TextChanged += (s, e) =>
         {
@@ -70,9 +76,25 @@ public class ChangePasswordForm : Form
         y += 32;
 
         var lblConfirm = new Label { Text = "Xác nhận mật khẩu mới:", Location = new Point(labelX, y), Size = new Size(140, 25) };
-        _txtConfirmNewPassword = new TextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtConfirmNewPassword = new SafeTextBox { Location = new Point(inputX, y), Size = new Size(inputW, 25), UseSystemPasswordChar = true };
+        _txtConfirmNewPassword.TextChanged += TextBoxHelper.SanitizePassword;
         _txtConfirmNewPassword.Validating += TxtConfirmNewPassword_Validating;
-        y += 42;
+        y += 32;
+
+        _chkShowPassword = new CheckBox
+        {
+            Text = "Hiện mật khẩu",
+            Location = new Point(inputX, y),
+            Size = new Size(inputW, 22)
+        };
+        _chkShowPassword.CheckedChanged += (s, e) =>
+        {
+            var show = _chkShowPassword.Checked;
+            _txtOldPassword.UseSystemPasswordChar = !show;
+            _txtNewPassword.UseSystemPasswordChar = !show;
+            _txtConfirmNewPassword.UseSystemPasswordChar = !show;
+        };
+        y += 30;
 
         _btnChange = new Button
         {
@@ -102,6 +124,7 @@ public class ChangePasswordForm : Form
             lblOld, _txtOldPassword,
             lblNew, _txtNewPassword,
             lblConfirm, _txtConfirmNewPassword,
+            _chkShowPassword,
             _btnChange, _btnCancel
         });
     }
@@ -134,9 +157,9 @@ public class ChangePasswordForm : Form
     {
         if (!ValidateChildren()) return;
 
-        var oldPassword = _txtOldPassword.Text;
-        var newPassword = _txtNewPassword.Text;
-        var confirmNew = _txtConfirmNewPassword.Text;
+        var oldPassword = _txtOldPassword.Text.Trim();
+        var newPassword = _txtNewPassword.Text.Trim();
+        var confirmNew = _txtConfirmNewPassword.Text.Trim();
 
         if (!_currentUser.UserId.HasValue)
         {
